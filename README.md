@@ -10,12 +10,12 @@ Zstandard is a fast compression algorithm offering high compression ratios. This
 
 ## Features
 
-- ⚡ **Fast** - Native implementation using Zig with minimal overhead
-- 🔄 **Streaming** - Process large files without loading them into memory
-- 🎯 **Context reuse** - Better performance when compressing multiple items
-- 📚 **Dictionary support** - Improved compression for similar small files
-- 🎨 **Compression strategies** - Optimized presets for different data types
-- 📦 **Complete API** - From simple one-shot to advanced streaming operations
+-  **Fast** - Native implementation using Zig with minimal overhead
+-  **Streaming** - Process large files without loading them into memory
+-  **Context reuse** - Better performance when compressing multiple items
+-  **Dictionary support** - Improved compression for similar small files
+-  **Compression strategies** - Optimized presets for different data types
+-  **Complete API** - From simple one-shot to advanced streaming operations
 
 ## Installation
 
