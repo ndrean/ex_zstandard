@@ -1,6 +1,10 @@
 # ExZstdZig
 
-Fast Zstandard (zstd) compression/decompression for Elixir, implemented with Zig NIFs via Zigler.
+Fast Zstandard (zstd) compression/decompression for Elixir, implemented with Zig NIFs via the wonderful Zigler library.
+
+![Zig support](https://img.shields.io/badge/Zig-0.15.1-color?logo=zig&color=%23f3ab20)
+![Static Badge](https://img.shields.io/badge/zigler-0.15.1-orange)
+![Static Badge](https://img.shields.io/badge/libzstd)
 
 Zstandard is a fast compression algorithm offering high compression ratios. This library provides complete bindings with support for one-shot operations, streaming, context reuse, and dictionary training.
 
