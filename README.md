@@ -202,6 +202,32 @@ mix docs
 
 Then open `doc/index.html` in your browser.
 
+## Version Information
+
+ExZstdZig includes built-in support for git-based version tracking:
+
+```elixir
+# Get the basic version
+ExZstdZig.version()
+# => "0.1.0"
+
+# Get detailed version with git information
+ExZstdZig.version_string()
+# => "0.1.0 (main@26bbd43-dirty)"
+
+# Get comprehensive git information
+ExZstdZig.version_info()
+# => %{
+#   version: "0.1.0",
+#   commit_hash: {:ok, "26bbd43..."},
+#   short_commit_hash: {:ok, "26bbd43"},
+#   branch: {:ok, "main"},
+#   status: {:ok, :dirty}
+# }
+```
+
+The version automatically includes git commit information and dirty status when available.
+
 ## Benchmarks
 
 Coming soon!

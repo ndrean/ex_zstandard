@@ -4,7 +4,7 @@ defmodule ExZstdZig.MixProject do
   def project do
     [
       app: :ex_zstd_zig,
-      version: "0.1.0",
+      version: version(),
       elixir: "~> 1.18",
       name: "ExZstdZig",
       start_permanent: Mix.env() == :prod,
@@ -12,6 +12,27 @@ defmodule ExZstdZig.MixProject do
       docs: docs(),
       package: package()
     ]
+  end
+
+  defp version do
+    base_version = "0.1.0"
+
+    case System.cmd("git", ["describe", "--always", "--dirty"], stderr_to_stdout: true) do
+      {git_info, 0} ->
+        git_info = String.trim(git_info)
+
+        if String.contains?(git_info, "dirty") do
+          "#{base_version}-#{git_info}"
+        else
+          case System.cmd("git", ["rev-parse", "--short", "HEAD"], stderr_to_stdout: true) do
+            {commit_hash, 0} -> "#{base_version}+#{String.trim(commit_hash)}"
+            _ -> base_version
+          end
+        end
+
+      _ ->
+        base_version
+    end
   end
 
   # Run "mix help compile.app" to learn about applications.

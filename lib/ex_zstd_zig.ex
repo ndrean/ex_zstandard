@@ -306,4 +306,25 @@ defmodule ExZstdZig do
       :ok
     end
   end
+
+  @doc """
+  Returns the current version of ExZstdZig.
+  """
+  def version do
+    Application.spec(:ex_zstd_zig, :vsn) |> to_string()
+  end
+
+  @doc """
+  Returns comprehensive version information including git status.
+  """
+  def version_info do
+    ExZstdZig.GitInfo.info()
+  end
+
+  @doc """
+  Returns a formatted version string with git information.
+  """
+  def version_string do
+    ExZstdZig.GitInfo.version_string()
+  end
 end
