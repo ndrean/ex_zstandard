@@ -1,6 +1,9 @@
 const beam = @import("beam");
 const std = @import("std");
-const z = @cImport(@cInclude("zstd.h"));
+const z = @cImport({
+    @cInclude("zstd.h");
+    @cInclude("zdict.h");
+});
 
 pub fn version() []const u8 {
     return std.mem.span(z.ZSTD_versionString());
@@ -17,12 +20,66 @@ const ZstdError = error{
 };
 
 // -----------------------------------------------------
+// Strategy
+// -----------------------------------------------------
+
+pub const ZSTD_strategy = enum(i16) {
+    ZSTD_fast = 1,
+    ZSTD_dfast = 2,
+    ZSTD_greedy = 3,
+    ZSTD_lazy = 4,
+    ZSTD_lazy2 = 5,
+    ZSTD_btlazy2 = 6,
+    ZSTD_btopt = 7,
+    ZSTD_btultra = 8,
+    ZSTD_btultra2 = 9,
+};
+
+/// Compression recipes for different data types.
+/// Level 1 is fastest, 22 is slowest but best compression. 3 is the default.
+/// Use presets like "text", "structured_data", or "binary" for optimized compression of specific data types.
+pub const CompressionRecipe = enum {
+    /// Fast compression for any data type (level 1, fast strategy)
+    fast,
+    /// Balanced compression/speed (level 3, default strategy)
+    balanced,
+    /// Maximum compression (level 22, btultra2 strategy)
+    maximum,
+    /// Optimized for text/code (level 9, btopt strategy)
+    text,
+    /// Optimized for JSON/XML (level 9, btultra strategy)
+    structured_data,
+    /// Optimized for binary data (level 6, lazy2 strategy)
+    binary,
+
+    pub fn getLevel(self: CompressionRecipe) i16 {
+        return switch (self) {
+            .fast => 1,
+            .balanced => 3,
+            .maximum => 22,
+            .text => 9,
+            .structured_data => 9,
+            .binary => 6,
+        };
+    }
+
+    pub fn getStrategy(self: CompressionRecipe) ZSTD_strategy {
+        return switch (self) {
+            .fast => .ZSTD_fast,
+            .balanced => .ZSTD_dfast,
+            .maximum => .ZSTD_btultra2,
+            .text => .ZSTD_btopt,
+            .structured_data => .ZSTD_btultra,
+            .binary => .ZSTD_lazy2,
+        };
+    }
+};
+
+// -----------------------------------------------------
 // Simple one-shot compression and decompression functions
 // -----------------------------------------------------
-// const ZST_CONTENTSIZE_UNKNOWN: u64 = std.math.maxInt(u64);
-// const ZST_CONTENTSIZE_ERROR: u64 = std.math.maxInt(u64) - 1;
 
-/// Compress `input` with the specified `level` (1-22).
+/// Compress binary data with the specified `level` (1-22).
 /// Returns the compressed data or an error if compression fails.
 pub fn simple_compress(input: []const u8, level: i32) ZstdError![]u8 {
     const max_compressed_size = z.ZSTD_compressBound(input.len);
@@ -53,6 +110,7 @@ pub fn simple_compress(input: []const u8, level: i32) ZstdError![]u8 {
     };
 }
 
+/// Get the decompressed size from the compressed data frame header.
 pub fn getDecompressedSize(compressed: []const u8) ZstdError!usize {
     const decompressed_size = z.ZSTD_getFrameContentSize(compressed.ptr, compressed.len);
     if (decompressed_size == std.math.maxInt(u64)) {
@@ -67,6 +125,7 @@ pub fn getDecompressedSize(compressed: []const u8) ZstdError!usize {
     return @intCast(decompressed_size);
 }
 
+/// Decompress binary data with automatic output size detection.
 pub fn simple_auto_decompress(compressed: []const u8) ZstdError![]u8 {
     const decompressed_size = try getDecompressedSize(compressed);
     // std.debug.print("Decompressed size: {}\n", .{decompressed_size});
@@ -74,6 +133,7 @@ pub fn simple_auto_decompress(compressed: []const u8) ZstdError![]u8 {
     return try simple_decompress(compressed, decompressed_size);
 }
 
+/// Decompress binary data into a buffer of size `output_size`. Use `decompress` for automatic size detection instead.
 pub fn simple_decompress(compressed: []const u8, output_size: usize) ZstdError![]u8 {
     const decompressed = beam.allocator.alloc(u8, output_size) catch {
         return ZstdError.OutOfMemory;
@@ -106,6 +166,7 @@ pub fn simple_decompress(compressed: []const u8, output_size: usize) ZstdError![
 // Explicit tuple-returning versions
 // -----------------------------------------------------
 
+/// Compress binary data with specified compression level (1-22).
 pub fn compress(input: []const u8, level: i32) beam.term {
     const result = simple_compress(input, level) catch |err| {
         return beam.make_error_pair(err, .{});
@@ -113,6 +174,7 @@ pub fn compress(input: []const u8, level: i32) beam.term {
     return beam.make(.{ .ok, result }, .{});
 }
 
+/// Decompress binary data with automatic output size detection.
 pub fn decompress(compressed: []const u8) beam.term {
     const result = simple_auto_decompress(compressed) catch |err| {
         return beam.make_error_pair(err, .{});
@@ -147,16 +209,10 @@ const ZSTD_cParameter = enum(i16) {
     ZSTD_c_overlapLog = 402,
 };
 
-pub const ZSTD_strategy = enum(i16) {
-    ZSTD_fast = 1,
-    ZSTD_dfast = 2,
-    ZSTD_greedy = 3,
-    ZSTD_lazy = 4,
-    ZSTD_lazy2 = 5,
-    ZSTD_btlazy2 = 6,
-    ZSTD_btopt = 7,
-    ZSTD_btultra = 8,
-    ZSTD_btultra2 = 9,
+/// Configuration for compression context
+pub const CompressionConfig = struct {
+    compression_level: i32 = 3,
+    strategy: ?CompressionRecipe = .balanced,
 };
 
 const ZstdCCtx = struct {
@@ -178,7 +234,7 @@ pub const ZstdCCtxCallback = struct {
     }
 };
 
-/// NIF callback to free the ZstdCCtx when the resource is garbage collected
+/// NIF callback to free the ZstdDCtx when the resource is garbage collected
 pub const ZstdDCtxCallback = struct {
     pub fn dtor(handle: **ZstdDCtx) void {
         _ = z.ZSTD_freeDCtx(handle.*.dctx);
@@ -186,8 +242,11 @@ pub const ZstdDCtxCallback = struct {
     }
 };
 
-pub fn cctx_init(compression_level: i32) ZstdError!beam.term {
-    if (compression_level < z.ZSTD_minCLevel() or compression_level > z.ZSTD_maxCLevel()) {
+/// The compression context initialization function.
+/// It takes a CompressionConfig struct with compression_level (1-22) and optional strategy (CompressionRecipe).
+/// The default config, .{}, is level 3 with balanced compression strategy.
+pub fn cctx_init(config: CompressionConfig) ZstdError!beam.term {
+    if (config.compression_level < z.ZSTD_minCLevel() or config.compression_level > z.ZSTD_maxCLevel()) {
         return beam.make_error_pair(ZstdError.InvalidCompressionLevel, .{});
     }
 
@@ -204,15 +263,42 @@ pub fn cctx_init(compression_level: i32) ZstdError!beam.term {
     errdefer _ = z.ZSTD_freeCCtx(ctx.cctx);
 
     // Set compression level
-    const init_result = z.ZSTD_CCtx_setParameter(
+    var result = z.ZSTD_CCtx_setParameter(
         ctx.cctx,
         z.ZSTD_c_compressionLevel,
-        compression_level,
+        config.compression_level,
     );
-    if (z.ZSTD_isError(init_result) != 0) {
-        const err_name = std.mem.span(z.ZSTD_getErrorName(init_result));
+    if (z.ZSTD_isError(result) != 0) {
+        const err_name = std.mem.span(z.ZSTD_getErrorName(result));
         std.log.err("Failed to set compression level: {s}", .{err_name});
         return beam.make_error_pair(ZstdError.InvalidCompressionLevel, .{});
+    }
+
+    // Set strategy (either from recipe or default)
+    if (config.strategy) |recipe| {
+        const strat = recipe.getStrategy();
+        result = z.ZSTD_CCtx_setParameter(
+            ctx.cctx,
+            z.ZSTD_c_strategy,
+            @intFromEnum(strat),
+        );
+        if (z.ZSTD_isError(result) != 0) {
+            const err_name = std.mem.span(z.ZSTD_getErrorName(result));
+            std.log.err("Failed to set strategy: {s}", .{err_name});
+            return beam.make_error_pair(ZstdError.InvalidCompressionLevel, .{});
+        }
+    } else {
+        // Default strategy: greedy
+        result = z.ZSTD_CCtx_setParameter(
+            ctx.cctx,
+            z.ZSTD_c_strategy,
+            @intFromEnum(ZSTD_strategy.ZSTD_greedy),
+        );
+        if (z.ZSTD_isError(result) != 0) {
+            const err_name = std.mem.span(z.ZSTD_getErrorName(result));
+            std.log.err("Failed to set default strategy: {s}", .{err_name});
+            return beam.make_error_pair(ZstdError.InvalidCompressionLevel, .{});
+        }
     }
 
     // Wrap in resource
@@ -222,6 +308,8 @@ pub fn cctx_init(compression_level: i32) ZstdError!beam.term {
     return beam.make(.{ .ok, resource }, .{});
 }
 
+/// The decompression context initialization function.
+/// It takes a max_window: Optional maximum window size as power of 2 (10-31), or `nil`.
 pub fn dctx_init(max_window: ?i32) ZstdError!beam.term {
     // Create the ZstdDCtx struct
     const ctx = beam.allocator.create(ZstdDCtx) catch {
@@ -260,6 +348,7 @@ pub fn dctx_init(max_window: ?i32) ZstdError!beam.term {
     return beam.make(.{ .ok, resource }, .{});
 }
 
+/// Compress binary data using the provided compression context.
 pub fn compress_with_ctx(c_resource: ZstdCResource, input: []const u8) ZstdError!beam.term {
     const cctx = c_resource.unpack().*.cctx.?;
     const max_compressed_size = z.ZSTD_compressBound(input.len);
@@ -293,6 +382,7 @@ pub fn compress_with_ctx(c_resource: ZstdCResource, input: []const u8) ZstdError
     return beam.make(.{ .ok, result }, .{});
 }
 
+/// Decompress binary data using the provided decompression context.
 pub fn decompress_with_ctx(d_resource: ZstdDResource, compressed: []const u8) ZstdError!beam.term {
     const dctx = d_resource.unpack().*.dctx.?;
     const decompressed_size = try getDecompressedSize(compressed);
@@ -327,10 +417,11 @@ pub fn decompress_with_ctx(d_resource: ZstdDResource, compressed: []const u8) Zs
     return beam.make(.{ .ok, result }, .{});
 }
 
-/// NIF To be used:
-/// - Between compressing/decompressing different independent data streams
-///  - When they want to clear learned dictionaries/patterns
-///  - When reusing context for a completely new operation
+/// Reset compression context to reuse for a new independent operation.
+/// Use this:
+/// - Between compressing different independent data streams
+/// - To clear learned dictionaries/patterns
+/// - When reusing context for a completely new operation
 pub fn reset_compressor_session(c_resource: ZstdCResource) ZstdError!beam.term {
     const cctx = c_resource.unpack().*.cctx.?;
     const reset_result = z.ZSTD_CCtx_reset(cctx, z.ZSTD_reset_session_and_parameters);
@@ -342,10 +433,11 @@ pub fn reset_compressor_session(c_resource: ZstdCResource) ZstdError!beam.term {
     return beam.make_into_atom("ok", .{});
 }
 
-// NIF To be used:
-/// - Between compressing/decompressing different independent data streams
-///  - When they want to clear learned dictionaries/patterns
-///  - When reusing context for a completely new operation
+/// Reset decompression context to reuse for a new independent operation.
+/// Use this:
+/// - Between decompressing different independent data streams
+/// - To clear loaded dictionaries
+/// - When reusing context for a completely new operation
 pub fn reset_decompressor_session(d_resource: ZstdDResource) ZstdError!beam.term {
     const dctx = d_resource.unpack().*.dctx.?;
     const reset_result = z.ZSTD_DCtx_reset(dctx, z.ZSTD_reset_session_only);
@@ -381,7 +473,14 @@ pub fn recommended_d_out_size() usize {
     return z.ZSTD_DStreamOutSize();
 }
 
-pub const EndOp = enum {
+// EndOp modes:
+/// - :continue_op - Buffer data for better compression. May produce little/no output.
+///                  Use when more data is coming.
+/// - :flush - Force output of buffered data into a complete block. Guarantees output.
+///            Slightly reduces compression ratio. Use for real-time streaming.
+/// - :end_frame - Finalize and close the frame. Call with empty input (<<>>) after
+///                all data is sent, or with the last chunk. Adds frame footer/checksum.
+const EndOp = enum {
     continue_op,
     flush,
     end_frame,
@@ -510,4 +609,176 @@ pub fn decompress_stream(ctx: ZstdDResource, input: []const u8) ZstdError!beam.t
         .{ .ok, .{ decompressed, in_buf.pos } },
         .{},
     );
+}
+
+// -----------------------------------------------------
+// Dictionary compression and decompression
+// -----------------------------------------------------
+
+/// Train a dictionary from sample data for better compression of similar small files.
+///
+/// Parameters:
+/// - samples: List of sample data buffers to train on (minimum 20 samples recommended)
+/// - dict_size: Target dictionary size in bytes (typically 100KB for small data)
+///
+/// Returns {:ok, dictionary} on success, {:error, reason} on failure
+pub fn train_dictionary(samples: []const []const u8, dict_size: usize) ZstdError!beam.term {
+    if (samples.len == 0) {
+        return beam.make_error_pair(ZstdError.InvalidInput, .{});
+    }
+
+    // Calculate total samples size
+    var total_size: usize = 0;
+    for (samples) |sample| {
+        total_size += sample.len;
+    }
+
+    // Flatten samples into contiguous buffer and create sizes array
+    const samples_buffer = beam.allocator.alloc(u8, total_size) catch {
+        return beam.make_error_pair(ZstdError.OutOfMemory, .{});
+    };
+    defer beam.allocator.free(samples_buffer);
+
+    const sample_sizes = beam.allocator.alloc(usize, samples.len) catch {
+        return beam.make_error_pair(ZstdError.OutOfMemory, .{});
+    };
+    defer beam.allocator.free(sample_sizes);
+
+    var offset: usize = 0;
+    for (samples, 0..) |sample, i| {
+        @memcpy(samples_buffer[offset .. offset + sample.len], sample);
+        sample_sizes[i] = sample.len;
+        offset += sample.len;
+    }
+
+    // Allocate dictionary buffer
+    const dict_buffer = beam.allocator.alloc(u8, dict_size) catch {
+        return beam.make_error_pair(ZstdError.OutOfMemory, .{});
+    };
+    errdefer beam.allocator.free(dict_buffer);
+
+    // Train dictionary
+    const result = z.ZDICT_trainFromBuffer(
+        dict_buffer.ptr,
+        dict_size,
+        samples_buffer.ptr,
+        sample_sizes.ptr,
+        @intCast(samples.len),
+    );
+
+    if (z.ZDICT_isError(result) != 0) {
+        return beam.make_error_pair(ZstdError.CompressionFailed, .{});
+    }
+
+    // Resize to actual dictionary size
+    const trained_dict = beam.allocator.realloc(dict_buffer, result) catch {
+        return beam.make_error_pair(ZstdError.OutOfMemory, .{});
+    };
+
+    return beam.make(.{ .ok, trained_dict }, .{});
+}
+
+/// Load a dictionary into a compression context for reuse across multiple compressions.
+/// The dictionary remains loaded until a new one is loaded or the context is reset.
+pub fn load_compression_dictionary(c_resource: ZstdCResource, dictionary: []const u8) ZstdError!beam.term {
+    const cctx = c_resource.unpack().*.cctx.?;
+
+    const result = z.ZSTD_CCtx_loadDictionary(cctx, dictionary.ptr, dictionary.len);
+    if (z.ZSTD_isError(result) != 0) {
+        return beam.make_error_pair(ZstdError.CompressionFailed, .{});
+    }
+
+    return beam.make(.ok, .{});
+}
+
+/// Load a dictionary into a decompression context for reuse across multiple decompressions.
+/// The dictionary remains loaded until a new one is loaded or the context is reset.
+pub fn load_decompression_dictionary(d_resource: ZstdDResource, dictionary: []const u8) ZstdError!beam.term {
+    const dctx = d_resource.unpack().*.dctx.?;
+
+    const result = z.ZSTD_DCtx_loadDictionary(dctx, dictionary.ptr, dictionary.len);
+    if (z.ZSTD_isError(result) != 0) {
+        return beam.make_error_pair(ZstdError.DecompressionFailed, .{});
+    }
+
+    return beam.make(.ok, .{});
+}
+
+/// Compress data using a dictionary for better compression of small similar files.
+/// The dictionary should be trained on representative sample data.
+/// Uses the compression settings already configured in the context.
+pub fn compress_with_dict(
+    c_resource: ZstdCResource,
+    input: []const u8,
+    dictionary: []const u8,
+) ZstdError!beam.term {
+    const bound = z.ZSTD_compressBound(input.len);
+    if (z.ZSTD_isError(bound) == 1) {
+        return beam.make_error_pair(ZstdError.CompressionFailed, .{});
+    }
+
+    const out = beam.allocator.alloc(u8, bound) catch {
+        return beam.make_error_pair(ZstdError.OutOfMemory, .{});
+    };
+    errdefer beam.allocator.free(out);
+
+    const cctx = c_resource.unpack().*.cctx.?;
+
+    // Load dictionary into context
+    const load_result = z.ZSTD_CCtx_loadDictionary(cctx, dictionary.ptr, dictionary.len);
+    if (z.ZSTD_isError(load_result) != 0) {
+        return beam.make_error_pair(ZstdError.CompressionFailed, .{});
+    }
+
+    // Compress using the context with loaded dictionary
+    const written_size = z.ZSTD_compress2(cctx, out.ptr, bound, input.ptr, input.len);
+    if (z.ZSTD_isError(written_size) != 0) {
+        return beam.make_error_pair(ZstdError.CompressionFailed, .{});
+    }
+
+    const compressed = beam.allocator.realloc(out, written_size) catch {
+        return beam.make_error_pair(ZstdError.OutOfMemory, .{});
+    };
+
+    return beam.make(.{ .ok, compressed }, .{});
+}
+
+/// Decompress data that was compressed using a dictionary.
+/// Output size is automatically determined from the frame.
+pub fn decompress_with_dict(
+    d_resource: ZstdDResource,
+    input: []const u8,
+    dictionary: []const u8,
+) ZstdError!beam.term {
+    const dctx = d_resource.unpack().*.dctx.?;
+
+    // Get decompressed size from frame
+    const decompressed_size = z.ZSTD_getFrameContentSize(input.ptr, input.len);
+    // ZSTD_CONTENTSIZE_ERROR = max u64 - 1
+    // ZSTD_CONTENTSIZE_UNKNOWN = max u64
+    if (decompressed_size == std.math.maxInt(u64) - 1) {
+        return beam.make_error_pair(ZstdError.DecompressionFailed, .{});
+    }
+    if (decompressed_size == std.math.maxInt(u64)) {
+        return beam.make_error_pair(ZstdError.InvalidInput, .{});
+    }
+
+    const out = beam.allocator.alloc(u8, decompressed_size) catch {
+        return beam.make_error_pair(ZstdError.OutOfMemory, .{});
+    };
+    errdefer beam.allocator.free(out);
+
+    // Load dictionary into context
+    const load_result = z.ZSTD_DCtx_loadDictionary(dctx, dictionary.ptr, dictionary.len);
+    if (z.ZSTD_isError(load_result) != 0) {
+        return beam.make_error_pair(ZstdError.DecompressionFailed, .{});
+    }
+
+    // Decompress using the context with loaded dictionary
+    const written = z.ZSTD_decompressDCtx(dctx, out.ptr, decompressed_size, input.ptr, input.len);
+    if (z.ZSTD_isError(written) != 0) {
+        return beam.make_error_pair(ZstdError.DecompressionFailed, .{});
+    }
+
+    return beam.make(.{ .ok, out }, .{});
 }
