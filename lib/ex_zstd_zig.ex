@@ -291,9 +291,7 @@ defmodule ExZstdZig do
 
       Stream.resource(
         # start_fun: {file_pid, buffer}
-        fn ->
-          {File.open!(input_path, [:read, :binary]), <<>>}
-        end,
+        fn -> {File.open!(input_path, [:read, :binary]), <<>>} end,
         # read_fun
         fn
           # Already processed EOF and emitted final data, now halt
@@ -308,28 +306,8 @@ defmodule ExZstdZig do
 
               :eof ->
                 # Process all remaining buffered data
-                # We need to loop until buffer is empty because one decompress_stream
-                # call may not consume everything
-                decompress_remaining = fn decompress_fn, buf, acc ->
-                  if byte_size(buf) == 0 do
-                    # All consumed
-                    acc
-                  else
-                    {:ok, {decompressed, bytes_consumed}} = decompress_stream(dctx, buf)
-
-                    if bytes_consumed == 0 do
-                      # Can't make progress - this shouldn't happen with valid data
-                      raise "Decompression stalled with #{byte_size(buf)} bytes remaining"
-                    end
-
-                    remaining =
-                      binary_part(buf, bytes_consumed, byte_size(buf) - bytes_consumed)
-
-                    decompress_fn.(decompress_fn, remaining, [decompressed | acc])
-                  end
-                end
-
-                decompressed_chunks = decompress_remaining.(decompress_remaining, buffer, [])
+                # One decompress_stream call may not consume everything, so loop until empty
+                decompressed_chunks = drain_buffer(dctx, buffer, [])
                 # Emit chunks and mark as done (will halt on next call)
                 {Enum.reverse(decompressed_chunks), {:done, file_pid}}
 
@@ -354,5 +332,20 @@ defmodule ExZstdZig do
 
       :ok
     end
+  end
+
+  # Helper function: recursively decompress until buffer is empty
+  defp drain_buffer(_dctx, <<>>, acc), do: acc
+
+  defp drain_buffer(dctx, buffer, acc) do
+    {:ok, {decompressed, bytes_consumed}} = decompress_stream(dctx, buffer)
+
+    if bytes_consumed == 0 do
+      # Can't make progress - corrupted data
+      raise "Decompression stalled with #{byte_size(buffer)} bytes remaining"
+    end
+
+    remaining = binary_part(buffer, bytes_consumed, byte_size(buffer) - bytes_consumed)
+    drain_buffer(dctx, remaining, [decompressed | acc])
   end
 end

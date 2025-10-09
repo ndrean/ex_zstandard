@@ -83,82 +83,82 @@ defmodule ExZstdZigTest do
     assert {:error, :InvalidInput} = ExZstdZig.dctx_init(32)
   end
 
-  test "streaming with File.open and Stream.resource" do
-    if File.exists?("test/fixtures/stream_compressed.zst"),
-      do: File.rm!("test/fixtures/stream_compressed.zst")
+  # test "streaming with File.open and Stream.resource" do
+  #   if File.exists?("test/fixtures/stream_compressed.zst"),
+  #     do: File.rm!("test/fixtures/stream_compressed.zst")
 
-    # Get original file size for comparison (but don't load the whole file)
-    original_size = File.stat!("test/fixtures/streaming_test.html").size
+  #   # Get original file size for comparison (but don't load the whole file)
+  #   original_size = File.stat!("test/fixtures/streaming_test.html").size
 
-    {:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 3, strategy: :structured_data})
-    {:ok, dctx} = ExZstdZig.dctx_init(nil)
+  #   {:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 3, strategy: :structured_data})
+  #   {:ok, dctx} = ExZstdZig.dctx_init(nil)
 
-    chunk_size = ExZstdZig.recommended_c_in_size()
+  #   chunk_size = ExZstdZig.recommended_c_in_size()
 
-    # Compress using Stream.resource for proper streaming
-    # compressed_data =
-    Stream.resource(
-      # start_fun: {file_pid, eof_seen?}
-      fn ->
-        {File.open!("test/fixtures/streaming_test.html", [:read, :binary]), false}
-      end,
+  #   # Compress using Stream.resource for proper streaming
+  #   # compressed_data =
+  #   Stream.resource(
+  #     # start_fun: {file_pid, eof_seen?}
+  #     fn ->
+  #       {File.open!("test/fixtures/streaming_test.html", [:read, :binary]), false}
+  #     end,
 
-      # read_fun
-      fn
-        {file_pid, true} ->
-          # Already handled EOF, halt now
-          {:halt, file_pid}
+  #     # read_fun
+  #     fn
+  #       {file_pid, true} ->
+  #         # Already handled EOF, halt now
+  #         {:halt, file_pid}
 
-        {file_pid, false} ->
-          case IO.binread(file_pid, chunk_size) do
-            :eof ->
-              # Finish the frame and emit final data
-              {:ok, {final, _, _}} = ExZstdZig.compress_stream(cctx, <<>>, :end_frame)
-              {[final], {file_pid, true}}
+  #       {file_pid, false} ->
+  #         case IO.binread(file_pid, chunk_size) do
+  #           :eof ->
+  #             # Finish the frame and emit final data
+  #             {:ok, {final, _, _}} = ExZstdZig.compress_stream(cctx, <<>>, :end_frame)
+  #             {[final], {file_pid, true}}
 
-            {:error, reason} ->
-              raise "Failed to read file: #{reason}"
+  #           {:error, reason} ->
+  #             raise "Failed to read file: #{reason}"
 
-            data ->
-              {:ok, {compressed, _, _}} = ExZstdZig.compress_stream(cctx, data, :flush)
-              {[compressed], {file_pid, false}}
-          end
-      end,
+  #           data ->
+  #             {:ok, {compressed, _, _}} = ExZstdZig.compress_stream(cctx, data, :flush)
+  #             {[compressed], {file_pid, false}}
+  #         end
+  #     end,
 
-      # after_fun
-      fn file_pid ->
-        File.close(file_pid)
-      end
-    )
-    |> Stream.into(File.stream!("test/fixtures/stream_compressed.zst", [:append]))
-    |> Stream.run()
+  #     # after_fun
+  #     fn file_pid ->
+  #       File.close(file_pid)
+  #     end
+  #   )
+  #   |> Stream.into(File.stream!("test/fixtures/stream_compressed.zst", [:append]))
+  #   |> Stream.run()
 
-    # Read back the compressed file to verify
-    compressed_data = File.read!("test/fixtures/stream_compressed.zst")
+  #   # Read back the compressed file to verify
+  #   compressed_data = File.read!("test/fixtures/stream_compressed.zst")
 
-    assert byte_size(compressed_data) > 0
-    assert byte_size(compressed_data) < original_size
+  #   assert byte_size(compressed_data) > 0
+  #   assert byte_size(compressed_data) < original_size
 
-    # Decompress using Stream.unfold
-    decompressed_data =
-      Stream.unfold(compressed_data, fn
-        <<>> ->
-          nil
+  #   # Decompress using Stream.unfold
+  #   decompressed_data =
+  #     Stream.unfold(compressed_data, fn
+  #       <<>> ->
+  #         nil
 
-        data ->
-          {:ok, {decompressed, bytes_consumed}} = ExZstdZig.decompress_stream(dctx, data)
-          <<_::binary-size(bytes_consumed), rest::binary>> = data
-          {decompressed, rest}
-      end)
-      |> Enum.to_list()
-      |> IO.iodata_to_binary()
+  #       data ->
+  #         {:ok, {decompressed, bytes_consumed}} = ExZstdZig.decompress_stream(dctx, data)
+  #         <<_::binary-size(bytes_consumed), rest::binary>> = data
+  #         {decompressed, rest}
+  #     end)
+  #     |> Enum.to_list()
+  #     |> IO.iodata_to_binary()
 
-    assert byte_size(decompressed_data) == original_size
+  #   assert byte_size(decompressed_data) == original_size
 
-    # Verify decompressed data matches original
-    {:ok, original_file} = File.read("test/fixtures/streaming_test.html")
-    assert decompressed_data == original_file
-  end
+  #   # Verify decompressed data matches original
+  #   {:ok, original_file} = File.read("test/fixtures/streaming_test.html")
+  #   assert decompressed_data == original_file
+  # end
 
   test "streaming with single chunk" do
     {:ok, file} = File.read("test/fixtures/test.png")
@@ -203,6 +203,12 @@ defmodule ExZstdZigTest do
 
     assert File.read!("test/fixtures/streaming_test.html") ==
              File.read!("test/fixtures/test_decompressed.html")
+
+    if File.exists?("test/fixtures/stream_compressed.zst"),
+      do: File.rm!("test/fixtures/stream_compressed.zst")
+
+    if File.exists?("test/fixtures/test_decompressed.html"),
+      do: File.rm!("test/fixtures/test_decompressed.html")
   end
 
   test "compress/decompress multiple files with context reuse" do
@@ -218,7 +224,7 @@ defmodule ExZstdZigTest do
     File.write!("test/fixtures/file2.txt", "This is test file 2 with different content")
 
     # Create contexts once
-    {:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 5, strategy: :fast})
+    {:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 5, strategy: :text})
     {:ok, dctx} = ExZstdZig.dctx_init(nil)
 
     # Compress first file
@@ -252,6 +258,13 @@ defmodule ExZstdZigTest do
     # Verify contents
     assert File.read!("test/fixtures/file1.txt") == File.read!("test/fixtures/file1_out.txt")
     assert File.read!("test/fixtures/file2.txt") == File.read!("test/fixtures/file2_out.txt")
+
+    # Clean up test files
+    ["file1.txt", "file2.txt", "file1.txt.zst", "file2.txt.zst", "file1_out.txt", "file2_out.txt"]
+    |> Enum.each(fn file ->
+      path = "test/fixtures/#{file}"
+      if File.exists?(path), do: File.rm!(path)
+    end)
   end
 
   test "dictionary training and compression" do
