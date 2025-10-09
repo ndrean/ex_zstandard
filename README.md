@@ -148,6 +148,54 @@ Example:
 4. **Stream large files** - Use `compress_file/3` or streaming API for files > 100MB
 5. **Pick the right strategy** - Match the strategy to your data type
 
+## HTTP Streaming
+
+### Compression: On-the-fly
+
+You **can** compress data on-the-fly during HTTP downloads because compression is fast enough:
+
+```elixir
+{:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 3, strategy: :structured_data})
+compressed_pid = File.open!("output.zst", [:write, :binary])
+
+Req.get!("https://example.com/large-file.json",
+  into: fn
+    {:data, chunk}, {req, resp} ->
+      # Compress each chunk as it arrives
+      {:ok, {compressed, _, _}} = ExZstdZig.compress_stream(cctx, chunk, :flush)
+      :ok = IO.binwrite(compressed_pid, compressed)
+      {:cont, {req, resp}}
+  end
+)
+
+File.close(compressed_pid)
+```
+
+### Decompression: 2-Step Process ⚠️
+
+You **cannot** decompress on-the-fly in HTTP callbacks due to HTTP/2 back-pressure limitations. Use a 2-step process:
+
+```elixir
+# Step 1: Download compressed file (fast callback)
+compressed_pid = File.open!("download.zst", [:write, :binary])
+
+Req.get!("https://example.com/compressed-file.zst",
+  into: fn
+    {:data, chunk}, {req, resp} ->
+      :ok = IO.binwrite(compressed_pid, chunk)
+      {:cont, {req, resp}}
+  end
+)
+
+File.close(compressed_pid)
+
+# Step 2: Decompress using streaming decompression
+{:ok, dctx} = ExZstdZig.dctx_init(nil)
+ExZstdZig.decompress_file("download.zst", "output.txt", dctx: dctx)
+```
+
+**Why?** HTTP/2 (used by Finch/Req) has no back-pressure mechanism. Decompression + file I/O in callbacks is too slow, causing connection timeouts and data loss.
+
 ## API Overview
 
 ### One-shot Functions

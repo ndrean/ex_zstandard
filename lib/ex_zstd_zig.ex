@@ -304,8 +304,7 @@ defmodule ExZstdZig do
       :ok
   """
   def decompress_file(input_path, output_path, opts \\ []) do
-    chunk_size = Keyword.get(opts, :chunk_size, recommended_d_in_size()) |> dbg()
-    File.stat!(input_path).size |> dbg()
+    chunk_size = Keyword.get(opts, :chunk_size, recommended_d_in_size())
 
     dctx =
       case Keyword.get(opts, :dctx) do
@@ -358,10 +357,10 @@ defmodule ExZstdZig do
                 # Keep unconsumed bytes for next iteration
                 remaining = binary_part(data, bytes_consumed, byte_size(data) - bytes_consumed)
 
-                dbg(
-                  {byte_size(chunk), byte_size(buffer), byte_size(decompressed), bytes_consumed,
-                   byte_size(remaining)}
-                )
+                # dbg(
+                #   {byte_size(chunk), byte_size(buffer), byte_size(decompressed), bytes_consumed,
+                #    byte_size(remaining)}
+                # )
 
                 {[decompressed], {file_pid, remaining}}
             end
@@ -419,7 +418,7 @@ defmodule ExZstdZig do
   defp drain_buffer(_dctx, <<>>, acc), do: acc
 
   defp drain_buffer(dctx, buffer, acc) do
-    dbg(length(acc))
+    # dbg(length(acc))
     {:ok, {decompressed, bytes_consumed}} = decompress_stream(dctx, buffer)
 
     if bytes_consumed == 0 do
@@ -428,7 +427,7 @@ defmodule ExZstdZig do
     end
 
     remaining = binary_part(buffer, bytes_consumed, byte_size(buffer) - bytes_consumed)
-    dbg({byte_size(buffer), byte_size(remaining)})
+    # dbg({byte_size(buffer), byte_size(remaining)})
     drain_buffer(dctx, remaining, [decompressed | acc])
   end
 end

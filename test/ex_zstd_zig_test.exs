@@ -387,50 +387,108 @@ defmodule ExZstdZigTest do
     assert decompressed2 == data2
   end
 
-  test "download & compress" do
-    if File.exists?("test/fixtures/http_stream_compressed.zst"),
-      do: File.rm!("test/fixtures/http_stream_compressed.zst")
+  @tag :network_dependent
+  test "HTTP fetch and compress on-the-fly" do
+    # Compression works on-the-fly because it's fast enough for HTTP callbacks
+    # The callback compresses each chunk as it arrives and writes to file
+
+    compressed_file = "test/fixtures/http_stream_compressed.zst"
+    decompressed_file = "test/fixtures/http_stream_decompressed.html"
+
+    if File.exists?(compressed_file), do: File.rm!(compressed_file)
+    if File.exists?(decompressed_file), do: File.rm!(decompressed_file)
 
     url =
       "https://raw.githubusercontent.com/ndrean/ex_zstd_zig/refs/heads/main/test/fixtures/streaming_test2.html"
 
+    IO.puts("\n=== HTTP fetch & compress on-the-fly... ===")
+
+    # Compress as chunks arrive
     {:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 3, strategy: :structured_data})
-    # {:ok, dctx} = ExZstdZig.dctx_init(nil)
-    pid = File.open!("test/fixtures/http_stream_compressed.zst", [:write, :binary])
+    compressed_pid = File.open!(compressed_file, [:write, :binary])
 
     Req.get!(url,
       into: fn
-        {:data, data}, {req, resp} ->
-          # count = Req.Response.get_private(resp, :count, 0)
-          # buff = Req.Response.get_private(resp, :buffer, "")
-          # resp = Req.Response.put_private(resp, :count, count + 1)
-          {:ok, {compressed, _, _}} = ExZstdZig.compress_stream(cctx, data, :flush)
-
-          :ok = IO.binwrite(pid, compressed)
+        {:data, chunk}, {req, resp} ->
+          # Compress chunk immediately (fast enough for HTTP callback)
+          {:ok, {compressed, _, _}} = ExZstdZig.compress_stream(cctx, chunk, :flush)
+          :ok = IO.binwrite(compressed_pid, compressed)
           {:cont, {req, resp}}
       end
     )
 
-    File.close(pid)
+    File.close(compressed_pid)
 
+    compressed_size = File.stat!(compressed_file).size
+    IO.puts("Compressed: #{compressed_size} bytes")
+
+    # Verify by decompressing
     {:ok, dctx} = ExZstdZig.dctx_init(nil)
-
-    ExZstdZig.decompress_file(
-      "test/fixtures/http_stream_compressed.zst",
-      "test/fixtures/http_stream_decompressed.html",
-      dctx: dctx
-    )
+    ExZstdZig.decompress_file(compressed_file, decompressed_file, dctx: dctx)
 
     assert File.read!("test/fixtures/streaming_test2.html") ==
-             File.read!("test/fixtures/http_stream_decompressed.html")
+             File.read!(decompressed_file)
 
-    # if File.exists?("test/fixtures/http_stream_compressed.zst"),
-    #   do: File.rm!("test/fixtures/http_stream_compressed.zst")
+    IO.puts("✓ HTTP fetch & compress on-the-fly successful!")
 
-    if File.exists?("test/fixtures/http_stream_decompressed.html"),
-      do: File.rm!("test/fixtures/http_stream_decompressed.html")
+    # Cleanup
+    if File.exists?(compressed_file), do: File.rm!(compressed_file)
+    if File.exists?(decompressed_file), do: File.rm!(decompressed_file)
   end
 
-  test "download & decompress" do
+  @tag :network_dependent
+  test "HTTP fetch compressed then decompress (2-step)" do
+    # Decompression CANNOT be done on-the-fly in HTTP callbacks because:
+    # - HTTP/2 has no back-pressure mechanism (Finch documentation)
+    # - Decompression + file I/O is too slow, blocking the callback
+    # - This causes HTTP connection timeouts and data loss
+    #
+    # Solution: 2-step process
+    #   1) Download compressed data and write to file (fast callback)
+    #   2) Decompress the file afterwards using streaming decompression
+
+    compressed_file = "test/fixtures/http_download_compressed.zst"
+    decompressed_file = "test/fixtures/http_download_decompressed.html"
+
+    if File.exists?(compressed_file), do: File.rm!(compressed_file)
+    if File.exists?(decompressed_file), do: File.rm!(decompressed_file)
+
+    url =
+      "https://github.com/ndrean/ex_zstd_zig/raw/refs/heads/main/test/fixtures/http_stream_compressed.zst"
+
+    IO.puts("\n=== HTTP fetch compressed, then decompress (2-step)... ===")
+
+    # Step 1: Download compressed file (fast, no processing in callback)
+    compressed_pid = File.open!(compressed_file, [:write, :binary])
+
+    Req.get!(url,
+      into: fn
+        {:data, chunk}, {req, resp} ->
+          :ok = IO.binwrite(compressed_pid, chunk)
+          {:cont, {req, resp}}
+      end
+    )
+
+    File.close(compressed_pid)
+
+    downloaded_size = File.stat!(compressed_file).size
+    IO.puts("Step 1: Downloaded #{downloaded_size} compressed bytes")
+
+    # Step 2: Decompress the file using streaming decompression
+    {:ok, dctx} = ExZstdZig.dctx_init(nil)
+    ExZstdZig.decompress_file(compressed_file, decompressed_file, dctx: dctx)
+
+    decompressed_size = File.stat!(decompressed_file).size
+    IO.puts("Step 2: Decompressed to #{decompressed_size} bytes")
+
+    # Verify result
+    assert File.read!("test/fixtures/streaming_test2.html") ==
+             File.read!(decompressed_file)
+
+    IO.puts("✓ 2-step download + decompress successful!")
+
+    # Cleanup
+    if File.exists?(compressed_file), do: File.rm!(compressed_file)
+    if File.exists?(decompressed_file), do: File.rm!(decompressed_file)
   end
 end
