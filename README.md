@@ -10,12 +10,12 @@ Zstandard is a fast compression algorithm offering high compression ratios. This
 
 ## Features
 
--  **Fast** - Native implementation using Zig with minimal overhead
--  **Streaming** - Process large files without loading them into memory
--  **Context reuse** - Better performance when compressing multiple items
--  **Dictionary support** - Improved compression for similar small files
--  **Compression strategies** - Optimized presets for different data types
--  **Complete API** - From simple one-shot to advanced streaming operations
+- **Fast** - Native implementation using Zig with minimal overhead
+- **Streaming** - Process large files without loading them into memory
+- **Context reuse** - Better performance when compressing multiple items
+- **Dictionary support** - Improved compression for similar small files
+- **Compression strategies** - Optimized presets for different data types
+- **Complete API** - From simple one-shot to advanced streaming operations
 
 ## Installation
 
@@ -34,18 +34,15 @@ end
 The library requires `libzstd` to be installed on your system:
 
 **macOS:**
+
 ```bash
 brew install zstd
 ```
 
 **Ubuntu/Debian:**
+
 ```bash
 sudo apt-get install libzstd-dev
-```
-
-**Fedora:**
-```bash
-sudo dnf install libzstd-devel
 ```
 
 ## Quick Start
@@ -154,32 +151,38 @@ Example:
 ## API Overview
 
 ### One-shot Functions
+
 - `compress/2` - Compress data, returns `{:ok, compressed}`
 - `decompress/1` - Decompress data, returns `{:ok, decompressed}`
 - `simple_compress/2` - Direct compression (raises on error)
 - `simple_auto_decompress/1` - Direct decompression (raises on error)
 
 ### Context Management
+
 - `cctx_init/1` - Create compression context
 - `dctx_init/1` - Create decompression context
 - `reset_compressor_session/1` - Reset compression context for reuse
 - `reset_decompressor_session/1` - Reset decompression context for reuse
 
 ### Context-based Operations
+
 - `compress_with_ctx/2` - Compress using context
 - `decompress_with_ctx/2` - Decompress using context
 
 ### Streaming
+
 - `compress_stream/3` - Compress data in chunks
 - `decompress_stream/2` - Decompress data in chunks
 - `recommended_c_in_size/0` - Get recommended input buffer size for compression
 - `recommended_d_in_size/0` - Get recommended input buffer size for decompression
 
 ### File Operations
+
 - `compress_file/3` - Compress file (streaming, low memory)
 - `decompress_file/3` - Decompress file (streaming, low memory)
 
 ### Dictionary Support
+
 - `train_dictionary/2` - Train dictionary from samples
 - `load_compression_dictionary/2` - Load dictionary into compression context
 - `load_decompression_dictionary/2` - Load dictionary into decompression context
@@ -187,6 +190,7 @@ Example:
 - `decompress_with_dict/3` - One-shot decompression with dictionary
 
 ### Utilities
+
 - `getDecompressedSize/1` - Get decompressed size from compressed data
 - `version/0` - Get zstd library version
 
@@ -201,36 +205,6 @@ mix docs
 ```
 
 Then open `doc/index.html` in your browser.
-
-## Version Information
-
-ExZstdZig includes built-in support for git-based version tracking:
-
-```elixir
-# Get the basic version
-ExZstdZig.version()
-# => "0.1.0"
-
-# Get detailed version with git information
-ExZstdZig.version_string()
-# => "0.1.0 (main@26bbd43-dirty)"
-
-# Get comprehensive git information
-ExZstdZig.version_info()
-# => %{
-#   version: "0.1.0",
-#   commit_hash: {:ok, "26bbd43..."},
-#   short_commit_hash: {:ok, "26bbd43"},
-#   branch: {:ok, "main"},
-#   status: {:ok, :dirty}
-# }
-```
-
-The version automatically includes git commit information and dirty status when available.
-
-## Benchmarks
-
-Coming soon!
 
 ## License
 
