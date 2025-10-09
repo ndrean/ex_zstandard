@@ -58,7 +58,7 @@ data = "Hello, World!"
 {:ok, decompressed} = ExZstdZig.decompress(compressed)
 ```
 
-### File Compression
+### File Compression with streams
 
 ```elixir
 # Compress a file

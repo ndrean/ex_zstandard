@@ -203,11 +203,13 @@ defmodule ExZstdZig do
 
     with cctx do
       Stream.resource(
-        # start_fun
+        # start_fun: state= {pid, true|false}
         fn ->
           {File.open!(input_path, [:read, :binary]), false}
         end,
         # read_fun
+        # (state = {pid, true|false}) ->{[compressed], state} | {:halt, state}
+        # compressed is emitted to next stream step (Stream.write)
         fn
           {file_pid, true} ->
             {:halt, file_pid}
@@ -223,6 +225,7 @@ defmodule ExZstdZig do
 
               data ->
                 {:ok, {compressed, _, _}} = compress_stream(cctx, data, mode)
+                # dbg({byte_size(data), byte_size(compressed)})
                 {[compressed], {file_pid, false}}
             end
         end,
@@ -234,6 +237,35 @@ defmodule ExZstdZig do
 
       :ok
     end
+  end
+
+  @doc """
+  Decompress a full binary and generate the full decompressed binary using Stream.unfold.
+  This is a faster convenience function for smaller data where you want to use streaming.
+  The resulting binary is built in memory and may be further saved to a file or processed.
+  """
+  def decompress_unfold(input, opts \\ []) do
+    dctx = Keyword.get(opts, :dctx) || dctx_init(nil) |> elem(1)
+
+    Stream.unfold(input, fn
+      <<>> ->
+        nil
+
+      data ->
+        case decompress_stream(dctx, data) do
+          {:ok, {decompressed, bytes_consumed}} ->
+            remaining = binary_part(data, bytes_consumed, byte_size(data) - bytes_consumed)
+            {decompressed, remaining}
+
+          {:error, reason} ->
+            raise "Decompression error: #{inspect(reason)}"
+        end
+    end)
+    |> Enum.to_list()
+    |> IO.iodata_to_binary()
+
+    # |> Stream.into(File.stream!(output, [:append]))
+    # |> Stream.run()
   end
 
   @doc """
@@ -272,7 +304,8 @@ defmodule ExZstdZig do
       :ok
   """
   def decompress_file(input_path, output_path, opts \\ []) do
-    chunk_size = Keyword.get(opts, :chunk_size, recommended_d_in_size())
+    chunk_size = Keyword.get(opts, :chunk_size, recommended_d_in_size()) |> dbg()
+    File.stat!(input_path).size |> dbg()
 
     dctx =
       case Keyword.get(opts, :dctx) do
@@ -290,9 +323,12 @@ defmodule ExZstdZig do
       if File.exists?(output_path), do: File.rm!(output_path)
 
       Stream.resource(
-        # start_fun: {file_pid, buffer}
+        # start_fun: () -> state = {pid, buffer = unconsumed}
         fn -> {File.open!(input_path, [:read, :binary]), <<>>} end,
-        # read_fun
+
+        # read_fun :
+        # (state = {pid, unconsumed}) ->{[decompressed], {pid, unconsumed}} | {:halt, state}
+        # decompressed is emitted to next stream step (Stream.write)
         fn
           # Already processed EOF and emitted final data, now halt
           {:done, file_pid} ->
@@ -308,23 +344,29 @@ defmodule ExZstdZig do
                 # Process all remaining buffered data
                 # One decompress_stream call may not consume everything, so loop until empty
                 decompressed_chunks = drain_buffer(dctx, buffer, [])
-                # Emit chunks and mark as done (will halt on next call)
+                # Emit chunks to the stream and mark as done (will halt on next call)
                 {Enum.reverse(decompressed_chunks), {:done, file_pid}}
 
               {:error, reason} ->
                 raise "Failed to read file: #{inspect(reason)}"
 
               chunk ->
-                # Append chunk to buffer
+                # "normal" iteration: append chunk to buffer
                 data = buffer <> chunk
                 {:ok, {decompressed, bytes_consumed}} = decompress_stream(dctx, data)
 
                 # Keep unconsumed bytes for next iteration
                 remaining = binary_part(data, bytes_consumed, byte_size(data) - bytes_consumed)
+
+                dbg(
+                  {byte_size(chunk), byte_size(buffer), byte_size(decompressed), bytes_consumed,
+                   byte_size(remaining)}
+                )
+
                 {[decompressed], {file_pid, remaining}}
             end
         end,
-        # after_fun
+        # after_fun: (acc) -> ()
         fn file_pid -> File.close(file_pid) end
       )
       |> Stream.into(File.stream!(output_path, [:append]))
@@ -334,10 +376,50 @@ defmodule ExZstdZig do
     end
   end
 
+  # Process flow example:
+  # Keyword.get(opts, :chunk_size, recommended_d_in_size()) #=> 131.075
+  # File.stat!(input_path).size #=> 9.082.348
+
+  # Iteration 1:
+  #   Input:  {pid, <<>>}
+  #   Read:   chunk1 (128KB)
+  #   Output: {[decompressed1], {pid, unconsumed1}}
+  #   Stream emits: decompressed1
+
+  #   {byte_size(chunk), byte_size(buffer), byte_size(decompressed), bytes_consumed, byte_size(remaining)}
+  #   => {131075, 0, 131072, 128133, 2942}
+
+  # Iteration 2:
+  #   Input:  {pid, unconsumed1}
+  #   Read:   chunk2 (128KB)
+  #   Output: {[decompressed2], {pid, unconsumed2}}
+  #   Stream emits: decompressed2
+
+  #   {byte_size(chunk), byte_size(buffer), byte_size(decompressed), bytes_consumed, byte_size(remaining)}
+  # .  => {131075, 2942, 131072, 18535, 115482}
+
+  # ...
+
+  # Iteration N (EOF):
+  #   Input:  {pid, buffer_with_50KB}
+  #   Read:   :eof
+  #   Process: drain_buffer() -> [chunk1, chunk2, chunk3]
+  #   Output: {[chunk1, chunk2, chunk3], {:done, pid}}
+  #   Stream emits: chunk1, chunk2, chunk3
+
+  # Iteration N+1:
+  #   Input:  {:done, pid}
+  #   Output: {:halt, pid}
+  #   Stream stops
+
+  # Cleanup:
+  #   Input: pid
+  #   Action: File.close(pid)
   # Helper function: recursively decompress until buffer is empty
   defp drain_buffer(_dctx, <<>>, acc), do: acc
 
   defp drain_buffer(dctx, buffer, acc) do
+    dbg(length(acc))
     {:ok, {decompressed, bytes_consumed}} = decompress_stream(dctx, buffer)
 
     if bytes_consumed == 0 do
@@ -346,6 +428,7 @@ defmodule ExZstdZig do
     end
 
     remaining = binary_part(buffer, bytes_consumed, byte_size(buffer) - bytes_consumed)
+    dbg({byte_size(buffer), byte_size(remaining)})
     drain_buffer(dctx, remaining, [decompressed | acc])
   end
 end

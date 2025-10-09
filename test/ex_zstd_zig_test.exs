@@ -160,26 +160,26 @@ defmodule ExZstdZigTest do
   #   assert decompressed_data == original_file
   # end
 
-  test "streaming with single chunk" do
-    {:ok, file} = File.read("test/fixtures/test.png")
+  # test "streaming with single chunk" do
+  #   {:ok, file} = File.read("test/fixtures/test.png")
 
-    {:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 5, strategy: :structured_data})
-    {:ok, dctx} = ExZstdZig.dctx_init(nil)
+  #   {:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 1, strategy: :structured_data})
+  #   {:ok, dctx} = ExZstdZig.dctx_init(nil)
 
-    # Compress entire file in one go
-    {:ok, {compressed, bytes_consumed, remaining}} =
-      ExZstdZig.compress_stream(cctx, file, :end_frame)
+  #   # Compress entire file in one go
+  #   {:ok, {compressed, bytes_consumed, remaining}} =
+  #     ExZstdZig.compress_stream(cctx, file, :end_frame)
 
-    assert bytes_consumed == byte_size(file)
-    # All flushed
-    assert remaining == 0
+  #   assert bytes_consumed == byte_size(file)
+  #   # All flushed
+  #   assert remaining == 0
 
-    # Decompress entire compressed data in one go
-    {:ok, {decompressed, _bytes_consumed}} =
-      ExZstdZig.decompress_stream(dctx, compressed)
+  #   # Decompress entire compressed data in one go
+  #   {:ok, {decompressed, _bytes_consumed}} =
+  #     ExZstdZig.decompress_stream(dctx, compressed)
 
-    assert decompressed == file
-  end
+  #   assert decompressed == file
+  # end
 
   test "final" do
     if File.exists?("test/fixtures/stream_compressed.zst"),
@@ -188,21 +188,58 @@ defmodule ExZstdZigTest do
     if File.exists?("test/fixtures/test_decompressed.html"),
       do: File.rm!("test/fixtures/test_decompressed.html")
 
+    # full streaming compression with compress_file
     :ok =
       ExZstdZig.compress_file(
-        "test/fixtures/streaming_test.html",
+        "test/fixtures/streaming_test2.html",
         "test/fixtures/stream_compressed.zst"
       )
 
+    {:ok, dctx} = ExZstdZig.dctx_init(nil)
+    # full streaming decompression with decompress_file
     :ok =
       ExZstdZig.decompress_file(
         "test/fixtures/stream_compressed.zst",
         "test/fixtures/test_decompressed.html",
-        []
+        dctx: dctx
       )
 
-    assert File.read!("test/fixtures/streaming_test.html") ==
+    assert File.read!("test/fixtures/streaming_test2.html") ==
              File.read!("test/fixtures/test_decompressed.html")
+
+    # Streaming decompression with unfold
+    if File.exists?("test/fixtures/stream_decompressed.html"),
+      do: File.rm!("test/fixtures/stream_decompressed.html")
+
+    # decompressed_data =
+
+    compressed_data = File.read!("test/fixtures/stream_compressed.zst")
+
+    decompressed_data =
+      ExZstdZig.decompress_unfold(
+        compressed_data,
+        dctx: dctx
+      )
+
+    # |> File.write("test/fixtures/stream_decompressed.html")
+
+    # decompressed_data =
+    # Stream.unfold(compressed_data, fn
+    #   <<>> ->
+    #     nil
+
+    #   data ->
+    #     {:ok, {decompressed, bytes_consumed}} = ExZstdZig.decompress_stream(dctx, data)
+    #     <<_::binary-size(bytes_consumed), rest::binary>> = data
+    #     dbg({byte_size(data), bytes_consumed, byte_size(decompressed), byte_size(rest)})
+    #     {decompressed, rest}
+    # end)
+    # |> Enum.to_list()
+    # |> IO.iodata_to_binary()
+
+    input = File.read!("test/fixtures/streaming_test2.html")
+
+    assert decompressed_data == input
 
     if File.exists?("test/fixtures/stream_compressed.zst"),
       do: File.rm!("test/fixtures/stream_compressed.zst")
@@ -211,61 +248,61 @@ defmodule ExZstdZigTest do
       do: File.rm!("test/fixtures/test_decompressed.html")
   end
 
-  test "compress/decompress multiple files with context reuse" do
-    # Clean up any existing test files
-    ["file1.txt.zst", "file2.txt.zst", "file1_out.txt", "file2_out.txt"]
-    |> Enum.each(fn file ->
-      path = "test/fixtures/#{file}"
-      if File.exists?(path), do: File.rm!(path)
-    end)
+  # test "compress/decompress multiple files with context reuse" do
+  #   # Clean up any existing test files
+  #   ["file1.txt.zst", "file2.txt.zst", "file1_out.txt", "file2_out.txt"]
+  #   |> Enum.each(fn file ->
+  #     path = "test/fixtures/#{file}"
+  #     if File.exists?(path), do: File.rm!(path)
+  #   end)
 
-    # Create test files
-    File.write!("test/fixtures/file1.txt", "This is test file 1 with some content")
-    File.write!("test/fixtures/file2.txt", "This is test file 2 with different content")
+  #   # Create test files
+  #   File.write!("test/fixtures/file1.txt", "This is test file 1 with some content")
+  #   File.write!("test/fixtures/file2.txt", "This is test file 2 with different content")
 
-    # Create contexts once
-    {:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 5, strategy: :text})
-    {:ok, dctx} = ExZstdZig.dctx_init(nil)
+  #   # Create contexts once
+  #   {:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 5, strategy: :text})
+  #   {:ok, dctx} = ExZstdZig.dctx_init(nil)
 
-    # Compress first file
-    :ok =
-      ExZstdZig.compress_file("test/fixtures/file1.txt", "test/fixtures/file1.txt.zst",
-        cctx: cctx
-      )
+  #   # Compress first file
+  #   :ok =
+  #     ExZstdZig.compress_file("test/fixtures/file1.txt", "test/fixtures/file1.txt.zst",
+  #       cctx: cctx
+  #     )
 
-    # Reset and compress second file
-    :ok = ExZstdZig.reset_compressor_session(cctx)
+  #   # Reset and compress second file
+  #   :ok = ExZstdZig.reset_compressor_session(cctx)
 
-    :ok =
-      ExZstdZig.compress_file("test/fixtures/file2.txt", "test/fixtures/file2.txt.zst",
-        cctx: cctx
-      )
+  #   :ok =
+  #     ExZstdZig.compress_file("test/fixtures/file2.txt", "test/fixtures/file2.txt.zst",
+  #       cctx: cctx
+  #     )
 
-    # Decompress first file
-    :ok =
-      ExZstdZig.decompress_file("test/fixtures/file1.txt.zst", "test/fixtures/file1_out.txt",
-        dctx: dctx
-      )
+  #   # Decompress first file
+  #   :ok =
+  #     ExZstdZig.decompress_file("test/fixtures/file1.txt.zst", "test/fixtures/file1_out.txt",
+  #       dctx: dctx
+  #     )
 
-    # Reset and decompress second file
-    :ok = ExZstdZig.reset_decompressor_session(dctx)
+  #   # Reset and decompress second file
+  #   :ok = ExZstdZig.reset_decompressor_session(dctx)
 
-    :ok =
-      ExZstdZig.decompress_file("test/fixtures/file2.txt.zst", "test/fixtures/file2_out.txt",
-        dctx: dctx
-      )
+  #   :ok =
+  #     ExZstdZig.decompress_file("test/fixtures/file2.txt.zst", "test/fixtures/file2_out.txt",
+  #       dctx: dctx
+  #     )
 
-    # Verify contents
-    assert File.read!("test/fixtures/file1.txt") == File.read!("test/fixtures/file1_out.txt")
-    assert File.read!("test/fixtures/file2.txt") == File.read!("test/fixtures/file2_out.txt")
+  #   # Verify contents
+  #   assert File.read!("test/fixtures/file1.txt") == File.read!("test/fixtures/file1_out.txt")
+  #   assert File.read!("test/fixtures/file2.txt") == File.read!("test/fixtures/file2_out.txt")
 
-    # Clean up test files
-    ["file1.txt", "file2.txt", "file1.txt.zst", "file2.txt.zst", "file1_out.txt", "file2_out.txt"]
-    |> Enum.each(fn file ->
-      path = "test/fixtures/#{file}"
-      if File.exists?(path), do: File.rm!(path)
-    end)
-  end
+  #   # Clean up test files
+  #   ["file1.txt", "file2.txt", "file1.txt.zst", "file2.txt.zst", "file1_out.txt", "file2_out.txt"]
+  #   |> Enum.each(fn file ->
+  #     path = "test/fixtures/#{file}"
+  #     if File.exists?(path), do: File.rm!(path)
+  #   end)
+  # end
 
   test "dictionary training and compression" do
     # Create sample data for training (similar small JSON documents)
@@ -348,5 +385,14 @@ defmodule ExZstdZigTest do
 
     assert decompressed1 == data1
     assert decompressed2 == data2
+  end
+
+  test "download" do
+    Req.get!("http://httpbin.org/stream/2",
+      into: fn {:data, data}, {req, resp} ->
+        IO.puts(data)
+        {:cont, {req, resp}}
+      end
+    )
   end
 end

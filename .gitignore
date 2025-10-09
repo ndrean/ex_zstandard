@@ -24,3 +24,4 @@ ex_zstd_zig-*.tar
 .elixir_ls/
 .Elixir.*
 lib/git_info.ex
+STREAMING.md
