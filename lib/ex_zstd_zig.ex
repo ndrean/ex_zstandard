@@ -272,7 +272,7 @@ defmodule ExZstdZig do
       :ok
   """
   def decompress_file(input_path, output_path, opts \\ []) do
-    # chunk_size = Keyword.get(opts, :chunk_size, recommended_d_in_size())
+    chunk_size = Keyword.get(opts, :chunk_size, recommended_d_in_size())
 
     dctx =
       case Keyword.get(opts, :dctx) do
@@ -289,17 +289,66 @@ defmodule ExZstdZig do
       # Ensure output file is empty before starting
       if File.exists?(output_path), do: File.rm!(output_path)
 
-      compressed_data = File.read!(input_path)
+      Stream.resource(
+        # start_fun: {file_pid, buffer}
+        fn ->
+          {File.open!(input_path, [:read, :binary]), <<>>}
+        end,
+        # read_fun
+        fn
+          # Already processed EOF and emitted final data, now halt
+          {:done, file_pid} ->
+            {:halt, file_pid}
 
-      Stream.unfold(compressed_data, fn
-        <<>> ->
-          nil
+          {file_pid, buffer} ->
+            case IO.binread(file_pid, chunk_size) do
+              :eof when buffer == <<>> ->
+                # No more data to process
+                {:halt, file_pid}
 
-        data ->
-          {:ok, {decompressed, bytes_consumed}} = decompress_stream(dctx, data)
-          <<_::binary-size(bytes_consumed), rest::binary>> = data
-          {decompressed, rest}
-      end)
+              :eof ->
+                # Process all remaining buffered data
+                # We need to loop until buffer is empty because one decompress_stream
+                # call may not consume everything
+                decompress_remaining = fn decompress_fn, buf, acc ->
+                  if byte_size(buf) == 0 do
+                    # All consumed
+                    acc
+                  else
+                    {:ok, {decompressed, bytes_consumed}} = decompress_stream(dctx, buf)
+
+                    if bytes_consumed == 0 do
+                      # Can't make progress - this shouldn't happen with valid data
+                      raise "Decompression stalled with #{byte_size(buf)} bytes remaining"
+                    end
+
+                    remaining =
+                      binary_part(buf, bytes_consumed, byte_size(buf) - bytes_consumed)
+
+                    decompress_fn.(decompress_fn, remaining, [decompressed | acc])
+                  end
+                end
+
+                decompressed_chunks = decompress_remaining.(decompress_remaining, buffer, [])
+                # Emit chunks and mark as done (will halt on next call)
+                {Enum.reverse(decompressed_chunks), {:done, file_pid}}
+
+              {:error, reason} ->
+                raise "Failed to read file: #{inspect(reason)}"
+
+              chunk ->
+                # Append chunk to buffer
+                data = buffer <> chunk
+                {:ok, {decompressed, bytes_consumed}} = decompress_stream(dctx, data)
+
+                # Keep unconsumed bytes for next iteration
+                remaining = binary_part(data, bytes_consumed, byte_size(data) - bytes_consumed)
+                {[decompressed], {file_pid, remaining}}
+            end
+        end,
+        # after_fun
+        fn file_pid -> File.close(file_pid) end
+      )
       |> Stream.into(File.stream!(output_path, [:append]))
       |> Stream.run()
 
