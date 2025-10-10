@@ -210,8 +210,12 @@ const ZSTD_cParameter = enum(i16) {
 };
 
 /// Configuration for compression context
+// pub const CompressionConfig = struct {
+//     compression_level: i32 = 3,
+//     strategy: ?CompressionRecipe = .balanced,
+// };
 pub const CompressionConfig = struct {
-    compression_level: i32 = 3,
+    compression_level: ?i32 = null,
     strategy: ?CompressionRecipe = .balanced,
 };
 
@@ -243,10 +247,24 @@ pub const ZstdDCtxCallback = struct {
 };
 
 /// The compression context initialization function.
-/// It takes a CompressionConfig struct with compression_level (1-22) and optional strategy (CompressionRecipe).
-/// The default config, .{}, is level 3 with balanced compression strategy.
+/// It takes a CompressionConfig struct with optional compression_level (1-22) and optional strategy (CompressionRecipe).
+///
+/// Usage:
+///   - cctx_init(.{}) - Use defaults: level 3 + dfast strategy
+///   - cctx_init(.{.strategy = .text}) - Use recipe defaults: level 9 + btopt strategy
+///   - cctx_init(.{.compression_level = 15, .strategy = .text}) - Custom level with recipe strategy
+///   - cctx_init(.{.compression_level = 5}) - Custom level with default strategy
 pub fn cctx_init(config: CompressionConfig) ZstdError!beam.term {
-    if (config.compression_level < z.ZSTD_minCLevel() or config.compression_level > z.ZSTD_maxCLevel()) {
+    // Determine compression level: explicit > recipe default > 3
+    const level = if (config.strategy) |recipe| blk: {
+        // Recipe provided: use explicit level or recipe's level
+        break :blk config.compression_level orelse recipe.getLevel();
+    } else blk: {
+        // No recipe: use explicit level or default 3
+        break :blk config.compression_level orelse 3;
+    };
+
+    if (level < z.ZSTD_minCLevel() or level > z.ZSTD_maxCLevel()) {
         return beam.make_error_pair(ZstdError.InvalidCompressionLevel, .{});
     }
 
@@ -266,7 +284,7 @@ pub fn cctx_init(config: CompressionConfig) ZstdError!beam.term {
     var result = z.ZSTD_CCtx_setParameter(
         ctx.cctx,
         z.ZSTD_c_compressionLevel,
-        config.compression_level,
+        level,
     );
     if (z.ZSTD_isError(result) != 0) {
         const err_name = std.mem.span(z.ZSTD_getErrorName(result));
@@ -274,31 +292,21 @@ pub fn cctx_init(config: CompressionConfig) ZstdError!beam.term {
         return beam.make_error_pair(ZstdError.InvalidCompressionLevel, .{});
     }
 
-    // Set strategy (either from recipe or default)
-    if (config.strategy) |recipe| {
-        const strat = recipe.getStrategy();
-        result = z.ZSTD_CCtx_setParameter(
-            ctx.cctx,
-            z.ZSTD_c_strategy,
-            @intFromEnum(strat),
-        );
-        if (z.ZSTD_isError(result) != 0) {
-            const err_name = std.mem.span(z.ZSTD_getErrorName(result));
-            std.log.err("Failed to set strategy: {s}", .{err_name});
-            return beam.make_error_pair(ZstdError.InvalidCompressionLevel, .{});
-        }
-    } else {
-        // Default strategy: greedy
-        result = z.ZSTD_CCtx_setParameter(
-            ctx.cctx,
-            z.ZSTD_c_strategy,
-            @intFromEnum(ZSTD_strategy.ZSTD_greedy),
-        );
-        if (z.ZSTD_isError(result) != 0) {
-            const err_name = std.mem.span(z.ZSTD_getErrorName(result));
-            std.log.err("Failed to set default strategy: {s}", .{err_name});
-            return beam.make_error_pair(ZstdError.InvalidCompressionLevel, .{});
-        }
+    // Set strategy from recipe or use default
+    const strategy = if (config.strategy) |recipe|
+        recipe.getStrategy()
+    else
+        ZSTD_strategy.ZSTD_dfast;
+
+    result = z.ZSTD_CCtx_setParameter(
+        ctx.cctx,
+        z.ZSTD_c_strategy,
+        @intFromEnum(strategy),
+    );
+    if (z.ZSTD_isError(result) != 0) {
+        const err_name = std.mem.span(z.ZSTD_getErrorName(result));
+        std.log.err("Failed to set strategy: {s}", .{err_name});
+        return beam.make_error_pair(ZstdError.InvalidCompressionLevel, .{});
     }
 
     // Wrap in resource

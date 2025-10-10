@@ -71,8 +71,8 @@ data = "Hello, World!"
 ### Context Reuse (Better Performance)
 
 ```elixir
-# Create a context once
-{:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 5, strategy: :text})
+# Create a context once (use recipe defaults for text compression)
+{:ok, cctx} = ExZstdZig.cctx_init(%{strategy: :text})
 
 # Compress multiple items efficiently
 {:ok, compressed1} = ExZstdZig.compress_with_ctx(cctx, data1)
@@ -84,15 +84,65 @@ data = "Hello, World!"
 
 ### Streaming Compression
 
+The `compress_stream/3` function accepts three modes that control buffering and output:
+
+**`:continue_op`** - Better compression, batch processing
+- Buffers data for better compression ratios
+- May produce no output (buffering internally)
+- Use when: Processing data in batches, compression ratio matters more than latency
+
+**`:flush`** - Guaranteed output, real-time streaming
+- Forces output for each chunk (guarantees non-empty result)
+- Slightly reduces compression ratio
+- Use when: Real-time streaming (HTTP, network), need output per chunk
+
+**`:end_frame`** - Finalize frame
+- Closes the compression frame with footer/checksum
+- Call with empty input `<<>>` after last data chunk
+- Required to complete valid compressed data
+
+#### Example: Better compression with `:continue_op`
+
 ```elixir
 {:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 3, strategy: :balanced})
 
-# Compress in chunks
-{:ok, {chunk1, _, _}} = ExZstdZig.compress_stream(cctx, data_chunk1, :flush)
-{:ok, {chunk2, _, _}} = ExZstdZig.compress_stream(cctx, data_chunk2, :flush)
+# Buffer data for better compression (may produce empty chunks)
+{:ok, {out1, _, _}} = ExZstdZig.compress_stream(cctx, data_chunk1, :continue_op)
+{:ok, {out2, _, _}} = ExZstdZig.compress_stream(cctx, data_chunk2, :continue_op)
+{:ok, {out3, _, _}} = ExZstdZig.compress_stream(cctx, data_chunk3, :continue_op)
+
+# Finalize frame
 {:ok, {final, _, _}} = ExZstdZig.compress_stream(cctx, <<>>, :end_frame)
 
-compressed = IO.iodata_to_binary([chunk1, chunk2, final])
+# Some outputs may be empty if data was buffered
+compressed = IO.iodata_to_binary([out1, out2, out3, final])
+```
+
+#### Example: Real-time streaming with `:flush`
+
+```elixir
+{:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 3, strategy: :balanced})
+
+# Force output for each chunk (guaranteed non-empty)
+{:ok, {chunk1, _, _}} = ExZstdZig.compress_stream(cctx, data_chunk1, :flush)
+{:ok, {chunk2, _, _}} = ExZstdZig.compress_stream(cctx, data_chunk2, :flush)
+{:ok, {chunk3, _, _}} = ExZstdZig.compress_stream(cctx, data_chunk3, :flush)
+
+# Finalize frame
+{:ok, {final, _, _}} = ExZstdZig.compress_stream(cctx, <<>>, :end_frame)
+
+# All chunks contain data (good for streaming)
+compressed = IO.iodata_to_binary([chunk1, chunk2, chunk3, final])
+```
+
+### In-Memory Streaming Decompression
+
+For moderately-sized compressed data in memory, use `decompress_unfold/2`:
+
+```elixir
+# Decompress a binary with streaming (efficient for medium-sized data)
+compressed = File.read!("data.zst")
+decompressed = ExZstdZig.decompress_unfold(compressed)
 ```
 
 ### Dictionary Training
@@ -121,23 +171,36 @@ samples = [
 
 ## Compression Strategies
 
-Choose the right strategy for your data type:
+Choose the right strategy for your data type. Each recipe provides optimized defaults for compression level and ZSTD algorithm:
 
-- `:fast` - Fastest compression (level 1)
-- `:balanced` - Good balance (level 3, **default**)
-- `:maximum` - Maximum compression (level 22)
-- `:text` - Optimized for text/code (level 9)
-- `:structured_data` - Optimized for JSON/XML (level 9)
-- `:binary` - Optimized for binary data (level 6)
+- `:fast` - Fastest compression (level 1, fast algorithm)
+- `:balanced` - Good balance (level 3, dfast algorithm, **default**)
+- `:maximum` - Maximum compression (level 22, btultra2 algorithm)
+- `:text` - Optimized for text/code (level 9, btopt algorithm)
+- `:structured_data` - Optimized for JSON/XML (level 9, btultra algorithm)
+- `:binary` - Optimized for binary data (level 6, lazy2 algorithm)
 
-Example:
+### Configuration Options
 
 ```elixir
-# For JSON data
-{:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 9, strategy: :structured_data})
+# Use recipe defaults (recommended)
+{:ok, cctx} = ExZstdZig.cctx_init(%{strategy: :text})
+# → level 9 + btopt algorithm
 
-# For text files
-{:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 9, strategy: :text})
+{:ok, cctx} = ExZstdZig.cctx_init(%{strategy: :structured_data})
+# → level 9 + btultra algorithm
+
+# Override level while keeping recipe's algorithm
+{:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 15, strategy: :text})
+# → level 15 + btopt algorithm
+
+# Custom level with default algorithm
+{:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 5})
+# → level 5 + dfast algorithm
+
+# Use all defaults
+{:ok, cctx} = ExZstdZig.cctx_init(%{})
+# → level 3 + dfast algorithm
 ```
 
 ## Performance Tips
@@ -155,19 +218,23 @@ Example:
 You **can** compress data on-the-fly during HTTP downloads because compression is fast enough:
 
 ```elixir
+# Use level 3 for speed (level 9 would be too slow for on-the-fly compression)
 {:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 3, strategy: :structured_data})
 compressed_pid = File.open!("output.zst", [:write, :binary])
 
 Req.get!("https://example.com/large-file.json",
   into: fn
     {:data, chunk}, {req, resp} ->
-      # Compress each chunk as it arrives
+      # Compress each chunk as it arrives (use :flush for guaranteed output)
       {:ok, {compressed, _, _}} = ExZstdZig.compress_stream(cctx, chunk, :flush)
       :ok = IO.binwrite(compressed_pid, compressed)
       {:cont, {req, resp}}
   end
 )
 
+# Finalize the compression frame
+{:ok, {final, _, _}} = ExZstdZig.compress_stream(cctx, <<>>, :end_frame)
+IO.binwrite(compressed_pid, final)
 File.close(compressed_pid)
 ```
 
@@ -221,6 +288,7 @@ ExZstdZig.decompress_file("download.zst", "output.txt", dctx: dctx)
 
 - `compress_stream/3` - Compress data in chunks
 - `decompress_stream/2` - Decompress data in chunks
+- `decompress_unfold/2` - Convenient streaming decompression for in-memory binaries
 - `recommended_c_in_size/0` - Get recommended input buffer size for compression
 - `recommended_d_in_size/0` - Get recommended input buffer size for decompression
 

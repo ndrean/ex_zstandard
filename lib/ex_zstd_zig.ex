@@ -57,8 +57,8 @@ defmodule ExZstdZig do
   ### Context reuse for better performance
 
   ```elixir
-  # Create a context once
-  {:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 5, strategy: :text})
+  # Create a context once (use recipe defaults for text compression)
+  {:ok, cctx} = ExZstdZig.cctx_init(%{strategy: :text})
 
   # Compress multiple items
   {:ok, compressed1} = ExZstdZig.compress_with_ctx(cctx, data1)
@@ -68,14 +68,25 @@ defmodule ExZstdZig do
 
   ### Streaming compression
 
+  The `compress_stream/3` function accepts three modes:
+
+  - **`:continue_op`** - Better compression (buffers data, may produce no output)
+  - **`:flush`** - Guaranteed output per chunk (for real-time streaming)
+  - **`:end_frame`** - Finalize frame (required to complete compression)
+
   ```elixir
   {:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 3, strategy: :balanced})
 
-  # Compress in chunks
+  # Option 1: Better compression with :continue_op (batch processing)
+  {:ok, {out1, _, _}} = ExZstdZig.compress_stream(cctx, data_chunk1, :continue_op)
+  {:ok, {out2, _, _}} = ExZstdZig.compress_stream(cctx, data_chunk2, :continue_op)
+  {:ok, {final, _, _}} = ExZstdZig.compress_stream(cctx, <<>>, :end_frame)
+  compressed = IO.iodata_to_binary([out1, out2, final])
+
+  # Option 2: Real-time streaming with :flush (HTTP, network)
   {:ok, {chunk1, _, _}} = ExZstdZig.compress_stream(cctx, data_chunk1, :flush)
   {:ok, {chunk2, _, _}} = ExZstdZig.compress_stream(cctx, data_chunk2, :flush)
   {:ok, {final, _, _}} = ExZstdZig.compress_stream(cctx, <<>>, :end_frame)
-
   compressed = IO.iodata_to_binary([chunk1, chunk2, final])
   ```
 
@@ -97,13 +108,35 @@ defmodule ExZstdZig do
 
   ## Compression Strategies
 
-  Available strategies for different data types:
-  - `:fast` - Fastest compression (level 1)
-  - `:balanced` - Good balance of speed/ratio (level 3, default)
-  - `:maximum` - Maximum compression (level 22)
-  - `:text` - Optimized for text/code (level 9)
-  - `:structured_data` - Optimized for JSON/XML (level 9)
-  - `:binary` - Optimized for binary data (level 6)
+  Each recipe provides optimized defaults for compression level and ZSTD algorithm:
+  - `:fast` - Fastest compression (level 1, fast algorithm)
+  - `:balanced` - Good balance of speed/ratio (level 3, dfast algorithm, default)
+  - `:maximum` - Maximum compression (level 22, btultra2 algorithm)
+  - `:text` - Optimized for text/code (level 9, btopt algorithm)
+  - `:structured_data` - Optimized for JSON/XML (level 9, btultra algorithm)
+  - `:binary` - Optimized for binary data (level 6, lazy2 algorithm)
+
+  ### Configuration Flexibility
+
+  You can use recipes in multiple ways:
+
+  ```elixir
+  # Use recipe defaults (recommended)
+  {:ok, cctx} = ExZstdZig.cctx_init(%{strategy: :text})
+  # → level 9 + btopt algorithm
+
+  # Override level while keeping recipe's algorithm
+  {:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 15, strategy: :text})
+  # → level 15 + btopt algorithm
+
+  # Custom level with default algorithm
+  {:ok, cctx} = ExZstdZig.cctx_init(%{compression_level: 5})
+  # → level 5 + dfast algorithm
+
+  # Use all defaults
+  {:ok, cctx} = ExZstdZig.cctx_init(%{})
+  # → level 3 + dfast algorithm
+  ```
 
   ## Performance Tips
 
@@ -128,6 +161,7 @@ defmodule ExZstdZig do
 
   ### Streaming
   - `compress_stream/3`, `decompress_stream/2` - Process data in chunks
+  - `decompress_unfold/2` - Convenient streaming decompression for in-memory binaries
   - `recommended_c_in_size/0`, `recommended_d_in_size/0` - Get optimal buffer sizes
 
   ### File Operations
@@ -240,12 +274,57 @@ defmodule ExZstdZig do
   end
 
   @doc """
-  Decompress a full binary and generate the full decompressed binary using Stream.unfold.
-  This is a faster convenience function for smaller data where you want to use streaming.
-  The resulting binary is built in memory and may be further saved to a file or processed.
+  Decompress a compressed binary using streaming decompression with `Stream.unfold`.
+
+  This function provides a convenient way to decompress data that's already in memory
+  using streaming decompression internally. It's useful when you have compressed data
+  as a binary and want to decompress it efficiently without loading it all at once
+  into a single decompression call.
+
+  ## When to use
+
+  - You have compressed data in memory (not a file)
+  - The compressed data is moderately sized (< 100MB)
+  - You want streaming decompression benefits without file I/O
+  - You prefer a simpler API than manual `decompress_stream/2` calls
+
+  ## Comparison with other methods
+
+  - Use `decompress/1` for small data when simplicity is preferred
+  - Use `decompress_unfold/2` for medium-sized data in memory with streaming benefits
+  - Use `decompress_file/3` for large files to avoid loading everything into memory
+
+  ## Parameters
+
+    - `input` - Compressed binary data
+    - `opts` - Keyword list of options:
+      - `:dctx` - Existing decompression context to reuse (optional)
+
+  ## Returns
+
+  The decompressed binary (built in memory)
+
+  ## Examples
+
+      # Simple usage - decompress a binary
+      iex> compressed = File.read!("data.zst")
+      iex> decompressed = ExZstdZig.decompress_unfold(compressed)
+      iex> byte_size(decompressed)
+      1024000
+
+      # Reuse context for multiple decompressions
+      iex> {:ok, dctx} = ExZstdZig.dctx_init(nil)
+      iex> data1 = ExZstdZig.decompress_unfold(compressed1, dctx: dctx)
+      iex> ExZstdZig.reset_decompressor_session(dctx)
+      iex> data2 = ExZstdZig.decompress_unfold(compressed2, dctx: dctx)
+
+  ## Notes
+
+  The entire decompressed result is built in memory. For very large data (> 100MB),
+  prefer `decompress_file/3` which streams to disk.
   """
   def decompress_unfold(input, opts \\ []) do
-    dctx = Keyword.get(opts, :dctx) || dctx_init(nil) |> elem(1)
+    dctx = Keyword.get(opts, :dctx) || ExZstdZig.dctx_init(nil) |> elem(1)
 
     Stream.unfold(input, fn
       <<>> ->
@@ -375,45 +454,6 @@ defmodule ExZstdZig do
     end
   end
 
-  # Process flow example:
-  # Keyword.get(opts, :chunk_size, recommended_d_in_size()) #=> 131.075
-  # File.stat!(input_path).size #=> 9.082.348
-
-  # Iteration 1:
-  #   Input:  {pid, <<>>}
-  #   Read:   chunk1 (128KB)
-  #   Output: {[decompressed1], {pid, unconsumed1}}
-  #   Stream emits: decompressed1
-
-  #   {byte_size(chunk), byte_size(buffer), byte_size(decompressed), bytes_consumed, byte_size(remaining)}
-  #   => {131075, 0, 131072, 128133, 2942}
-
-  # Iteration 2:
-  #   Input:  {pid, unconsumed1}
-  #   Read:   chunk2 (128KB)
-  #   Output: {[decompressed2], {pid, unconsumed2}}
-  #   Stream emits: decompressed2
-
-  #   {byte_size(chunk), byte_size(buffer), byte_size(decompressed), bytes_consumed, byte_size(remaining)}
-  # .  => {131075, 2942, 131072, 18535, 115482}
-
-  # ...
-
-  # Iteration N (EOF):
-  #   Input:  {pid, buffer_with_50KB}
-  #   Read:   :eof
-  #   Process: drain_buffer() -> [chunk1, chunk2, chunk3]
-  #   Output: {[chunk1, chunk2, chunk3], {:done, pid}}
-  #   Stream emits: chunk1, chunk2, chunk3
-
-  # Iteration N+1:
-  #   Input:  {:done, pid}
-  #   Output: {:halt, pid}
-  #   Stream stops
-
-  # Cleanup:
-  #   Input: pid
-  #   Action: File.close(pid)
   # Helper function: recursively decompress until buffer is empty
   defp drain_buffer(_dctx, <<>>, acc), do: acc
 
