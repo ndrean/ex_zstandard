@@ -483,11 +483,11 @@ pub fn recommended_d_out_size() usize {
 
 // EndOp modes:
 /// - :continue_op - Buffer data for better compression. May produce little/no output.
-///                  Use when more data is coming.
+/// Use when more data is coming.
 /// - :flush - Force output of buffered data into a complete block. Guarantees output.
-///            Slightly reduces compression ratio. Use for real-time streaming.
+/// Slightly reduces compression ratio. Use for real-time streaming.
 /// - :end_frame - Finalize and close the frame. Call with empty input (<<>>) after
-///                all data is sent, or with the last chunk. Adds frame footer/checksum.
+/// all data is sent, or with the last chunk. Adds frame footer/checksum.
 const EndOp = enum {
     continue_op,
     flush,

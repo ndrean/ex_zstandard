@@ -31,7 +31,7 @@ end
 
 ### System Requirements
 
-The library requires `libzstd` to be installed on your system:
+The library requires `zstd` to be installed on your system:
 
 **macOS:**
 
@@ -46,6 +46,8 @@ sudo apt-get install libzstd-dev
 ```
 
 ## Quick Start
+
+The tests contains worked examples.
 
 ### Simple Compression
 
@@ -87,16 +89,19 @@ data = "Hello, World!"
 The `compress_stream/3` function accepts three modes that control buffering and output:
 
 **`:continue_op`** - Better compression, batch processing
+
 - Buffers data for better compression ratios
 - May produce no output (buffering internally)
 - Use when: Processing data in batches, compression ratio matters more than latency
 
 **`:flush`** - Guaranteed output, real-time streaming
+
 - Forces output for each chunk (guarantees non-empty result)
 - Slightly reduces compression ratio
 - Use when: Real-time streaming (HTTP, network), need output per chunk
 
 **`:end_frame`** - Finalize frame
+
 - Closes the compression frame with footer/checksum
 - Call with empty input `<<>>` after last data chunk
 - Required to complete valid compressed data

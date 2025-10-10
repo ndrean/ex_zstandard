@@ -1,8 +1,8 @@
 defmodule ExZstdZig do
   @moduledoc """
-  Elixir bindings for the Zstandard (zstd) compression library, implemented in Zig via Zigler.
+  Elixir bindings for the Zstandard (zstd) compression library, implemented in `Zig` via the wonderful `Zigler` library.
 
-  Zstandard is a fast compression algorithm providing high compression ratios. This library
+  `Zstandard` is a fast compression algorithm providing high compression ratios. This library
   offers a complete API for compression and decompression with multiple usage patterns.
 
   ## Features
