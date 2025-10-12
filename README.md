@@ -52,13 +52,15 @@ The tests contains worked examples.
 ### Simple Compression
 
 ```elixir
-# Compress data
+# Compress data (best for small data < 200KB)
 data = "Hello, World!"
 {:ok, compressed} = ExZstdZig.compress(data, 3)
 
 # Decompress
 {:ok, decompressed} = ExZstdZig.decompress(compressed)
 ```
+
+**Note:** For data > 200KB, use `compress_file/3` or streaming functions to avoid blocking the scheduler.
 
 ### File Compression with streams
 
@@ -76,13 +78,15 @@ data = "Hello, World!"
 # Create a context once (use recipe defaults for text compression)
 {:ok, cctx} = ExZstdZig.cctx_init(%{strategy: :text})
 
-# Compress multiple items efficiently
+# Compress multiple items efficiently (best for items < 200KB each)
 {:ok, compressed1} = ExZstdZig.compress_with_ctx(cctx, data1)
 
 # Reset and reuse
 :ok = ExZstdZig.reset_compressor_session(cctx)
 {:ok, compressed2} = ExZstdZig.compress_with_ctx(cctx, data2)
 ```
+
+**Note:** For larger items, use `compress_file/3` with a reused context via the `:cctx` option.
 
 ### Streaming Compression
 
@@ -213,7 +217,10 @@ Choose the right strategy for your data type. Each recipe provides optimized def
 1. **Reuse contexts** - Creating contexts has overhead. Reuse them for multiple operations
 2. **Choose appropriate level** - Level 3 is usually optimal. Higher levels give diminishing returns
 3. **Use dictionaries** - For compressing many small similar files (< 1KB each)
-4. **Stream large files** - Use `compress_file/3` or streaming API for files > 100MB
+4. **Choose the right function for data size**:
+   - **< 200KB**: Use one-shot functions (`compress/2`, `decompress/1`)
+   - **> 200KB**: Use streaming functions (`compress_file/3`, `decompress_file/3`, `decompress_unfold/2`)
+   - One-shot functions use `:dirty_cpu` scheduling and may block the scheduler for >1ms on large data
 5. **Pick the right strategy** - Match the strategy to your data type
 
 ## HTTP Streaming
@@ -243,39 +250,37 @@ IO.binwrite(compressed_pid, final)
 File.close(compressed_pid)
 ```
 
-### Decompression: 2-Step Process ⚠️
+### Decompression: On-the-fly ✅
 
-You **cannot** decompress on-the-fly in HTTP callbacks due to HTTP/2 back-pressure limitations. Use a 2-step process:
+You **can** decompress on-the-fly during HTTP downloads using `stream_download_decompress/3`:
 
 ```elixir
-# Step 1: Download compressed file (fast callback)
-compressed_pid = File.open!("download.zst", [:write, :binary])
-
-Req.get!("https://example.com/compressed-file.zst",
-  into: fn
-    {:data, chunk}, {req, resp} ->
-      :ok = IO.binwrite(compressed_pid, chunk)
-      {:cont, {req, resp}}
-  end
-)
-
-File.close(compressed_pid)
-
-# Step 2: Decompress using streaming decompression
 {:ok, dctx} = ExZstdZig.dctx_init(nil)
-ExZstdZig.decompress_file("download.zst", "output.txt", dctx: dctx)
+
+ExZstdZig.stream_download_decompress(
+  dctx,
+  "https://example.com/compressed-file.zst",
+  "output.txt"
+)
 ```
 
-**Why?** HTTP/2 (used by Finch/Req) has no back-pressure mechanism. Decompression + file I/O in callbacks is too slow, causing connection timeouts and data loss.
+**How it works:** The function handles frame mis-alignment between HTTP chunks and zstd frames by:
+- Buffering unconsumed bytes between chunks
+- Using `Req.Response` private storage to maintain state
+- Draining remaining buffered data when the stream ends
+
+This avoids creating temporary files while safely handling cases where the connection closes with data still buffered.
 
 ## API Overview
 
 ### One-shot Functions
 
-- `compress/2` - Compress data, returns `{:ok, compressed}`
-- `decompress/1` - Decompress data, returns `{:ok, decompressed}`
-- `simple_compress/2` - Direct compression (raises on error)
-- `simple_auto_decompress/1` - Direct decompression (raises on error)
+⚠️ **Performance Note**: These functions use `:dirty_cpu` scheduling. For data > 200KB, prefer streaming functions to avoid blocking the BEAM scheduler.
+
+- `compress/2` - Compress data, returns `{:ok, compressed}` (dirty_cpu)
+- `decompress/1` - Decompress data, returns `{:ok, decompressed}` (dirty_cpu)
+- `simple_compress/2` - Direct compression, raises on error (dirty_cpu)
+- `simple_auto_decompress/1` - Direct decompression, raises on error (dirty_cpu)
 
 ### Context Management
 
@@ -286,8 +291,10 @@ ExZstdZig.decompress_file("download.zst", "output.txt", dctx: dctx)
 
 ### Context-based Operations
 
-- `compress_with_ctx/2` - Compress using context
-- `decompress_with_ctx/2` - Decompress using context
+⚠️ **Performance Note**: For large inputs (> 200KB), these may take >1ms. Consider using streaming functions instead.
+
+- `compress_with_ctx/2` - Compress using context (may block on large data)
+- `decompress_with_ctx/2` - Decompress using context (may block on large data)
 
 ### Streaming
 
@@ -301,6 +308,7 @@ ExZstdZig.decompress_file("download.zst", "output.txt", dctx: dctx)
 
 - `compress_file/3` - Compress file (streaming, low memory)
 - `decompress_file/3` - Decompress file (streaming, low memory)
+- `stream_download_decompress/3` - Download and decompress from URL on-the-fly
 
 ### Dictionary Support
 

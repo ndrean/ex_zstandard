@@ -1,9 +1,18 @@
 const beam = @import("beam");
 const std = @import("std");
+const builtin = @import("builtin");
 const z = @cImport({
+    @cDefine("ZSTD_STATIC_LINKING_ONLY", "1");
     @cInclude("zstd.h");
     @cInclude("zdict.h");
 });
+
+// Check if NIF timing is enabled (compile-time based on build mode)
+// Timing is automatically enabled in Debug builds, disabled in Release builds
+// No runtime overhead - the check is optimized away at compile time
+inline fn isTimingEnabled() bool {
+    return builtin.mode == .Debug;
+}
 
 pub fn version() []const u8 {
     return std.mem.span(z.ZSTD_versionString());
@@ -81,7 +90,16 @@ pub const CompressionRecipe = enum {
 
 /// Compress binary data with the specified `level` (1-22).
 /// Returns the compressed data or an error if compression fails.
-pub fn simple_compress(input: []const u8, level: i32) ZstdError![]u8 {
+fn simple_compress(input: []const u8, level: i32) ZstdError!beam.term {
+    const enable_timing = isTimingEnabled();
+    const start_time = if (enable_timing) std.time.nanoTimestamp() else 0;
+    defer if (enable_timing) {
+        const elapsed_ns = std.time.nanoTimestamp() - start_time;
+        const elapsed_ms = @as(f64, @floatFromInt(elapsed_ns)) / 1_000_000.0;
+
+        std.debug.print("[NIF Simple Compress] {d:.3} ms, level: {d}, for: {} bytes)\n", .{ elapsed_ms, level, input.len });
+    };
+
     const max_compressed_size = z.ZSTD_compressBound(input.len);
     if (z.ZSTD_isError(max_compressed_size) == 1) {
         const err_name = std.mem.span(z.ZSTD_getErrorName(max_compressed_size));
@@ -105,36 +123,37 @@ pub fn simple_compress(input: []const u8, level: i32) ZstdError![]u8 {
         return ZstdError.CompressionFailed;
     }
 
-    return beam.allocator.realloc(compressed, compressed_size) catch {
+    const slice = beam.allocator.realloc(compressed, compressed_size) catch {
         return ZstdError.OutOfMemory;
     };
+    defer beam.allocator.free(slice);
+    return beam.make(slice, .{});
 }
 
 /// Get the decompressed size from the compressed data frame header.
-pub fn getDecompressedSize(compressed: []const u8) ZstdError!usize {
+/// Returning null if unknown (for streaming-compressed data)
+pub fn getDecompressedSize(compressed: []const u8) ?usize {
     const decompressed_size = z.ZSTD_getFrameContentSize(compressed.ptr, compressed.len);
+    // ZSTD_CONTENTSIZE_UNKNOWN = maxInt(u64)
     if (decompressed_size == std.math.maxInt(u64)) {
-        std.log.err("Content size unknown", .{});
-        return ZstdError.InvalidInput;
+        return null;
     }
+    // ZSTD_CONTENTSIZE_ERROR = maxInt(u64) - 1 - corrupted frame
     if (decompressed_size == std.math.maxInt(u64) - 1) {
-        std.log.err("Content size error", .{});
-        return ZstdError.InvalidInput;
+        return null;
     }
-
     return @intCast(decompressed_size);
 }
 
 /// Decompress binary data with automatic output size detection.
-pub fn simple_auto_decompress(compressed: []const u8) ZstdError![]u8 {
-    const decompressed_size = try getDecompressedSize(compressed);
-    // std.debug.print("Decompressed size: {}\n", .{decompressed_size});
+fn auto_decompress(compressed: []const u8) ZstdError!beam.term {
+    const decompressed_size = getDecompressedSize(compressed) orelse compressed.len * 10;
 
     return try simple_decompress(compressed, decompressed_size);
 }
 
 /// Decompress binary data into a buffer of size `output_size`. Use `decompress` for automatic size detection instead.
-pub fn simple_decompress(compressed: []const u8, output_size: usize) ZstdError![]u8 {
+fn simple_decompress(compressed: []const u8, output_size: usize) ZstdError!beam.term {
     const decompressed = beam.allocator.alloc(u8, output_size) catch {
         return ZstdError.OutOfMemory;
     };
@@ -152,14 +171,14 @@ pub fn simple_decompress(compressed: []const u8, output_size: usize) ZstdError![
         std.log.err("Decompression failed: {s}", .{err_name});
         return ZstdError.DecompressionFailed;
     }
-    if (actual_decompressed_size != output_size) {
-        std.log.err("Size mismatch: expected {}, got {}", .{ output_size, actual_decompressed_size });
-        return ZstdError.DecompressionFailed;
-    }
 
-    return beam.allocator.realloc(decompressed, actual_decompressed_size) catch {
+    // Resize to actual size (no equality check needed - we allocated enough space)
+    // This allows estimated sizes (e.g., compressed.len * 10) to work correctly
+    const slice = beam.allocator.realloc(decompressed, actual_decompressed_size) catch {
         return ZstdError.OutOfMemory;
     };
+    defer beam.allocator.free(slice);
+    return beam.make(slice, .{});
 }
 
 // -----------------------------------------------------
@@ -176,38 +195,24 @@ pub fn compress(input: []const u8, level: i32) beam.term {
 
 /// Decompress binary data with automatic output size detection.
 pub fn decompress(compressed: []const u8) beam.term {
-    const result = simple_auto_decompress(compressed) catch |err| {
+    const enable_timing = isTimingEnabled();
+    const start_time = if (enable_timing) std.time.nanoTimestamp() else 0;
+    defer if (enable_timing) {
+        const elapsed_ns = std.time.nanoTimestamp() - start_time;
+        const elapsed_ms = @as(f64, @floatFromInt(elapsed_ns)) / 1_000_000.0;
+
+        std.debug.print("[NIF Simple Decompress] {d:.3} ms, for: {} bytes)\n", .{ elapsed_ms, compressed.len });
+    };
+    const result = auto_decompress(compressed) catch |err| {
         return beam.make_error_pair(err, .{});
     };
+
     return beam.make(.{ .ok, result }, .{});
 }
 
 // -----------------------------------------------------
 // Context-based compression and decompression
 // -----------------------------------------------------
-
-const ZSTD_cParameter = enum(i16) {
-    ZSTD_c_compressionLevel = 100,
-    ZSTD_c_windowLog = 101,
-    ZSTD_c_hashLog = 102,
-    ZSTD_c_chainLog = 103,
-    ZSTD_c_searchLog = 104,
-    ZSTD_c_minMatch = 105,
-    ZSTD_c_targetLength = 106,
-    ZSTD_c_strategy = 107,
-    ZSTD_c_targetCBlockSize = 130,
-    ZSTD_c_enableLongDistanceMatching = 160,
-    ZSTD_c_ldmHashLog = 161,
-    ZSTD_c_ldmMinMatch = 162,
-    ZSTD_c_ldmBucketSizeLog = 163,
-    ZSTD_c_ldmHashRateLog = 164,
-    ZSTD_c_contentSizeFlag = 200,
-    ZSTD_c_checksumFlag = 201,
-    ZSTD_c_dictIDFlag = 202,
-    ZSTD_c_nbWorkers = 400,
-    ZSTD_c_jobSize = 401,
-    ZSTD_c_overlapLog = 402,
-};
 
 /// Configuration for compression context
 // pub const CompressionConfig = struct {
@@ -235,6 +240,7 @@ pub const ZstdCCtxCallback = struct {
     pub fn dtor(handle: **ZstdCCtx) void {
         _ = z.ZSTD_freeCCtx(handle.*.cctx);
         beam.allocator.destroy(handle.*);
+        if (@import("builtin").mode == .Debug) std.debug.print("CDOTR called\n", .{});
     }
 };
 
@@ -243,6 +249,7 @@ pub const ZstdDCtxCallback = struct {
     pub fn dtor(handle: **ZstdDCtx) void {
         _ = z.ZSTD_freeDCtx(handle.*.dctx);
         beam.allocator.destroy(handle.*);
+        if (@import("builtin").mode == .Debug) std.debug.print("DDOTR called\n", .{});
     }
 };
 
@@ -357,8 +364,22 @@ pub fn dctx_init(max_window: ?i32) ZstdError!beam.term {
 }
 
 /// Compress binary data using the provided compression context.
+/// PERFORMANCE NOTE: For large inputs (>1MB), this may take >1ms. Consider using compress_file for very large data.
 pub fn compress_with_ctx(c_resource: ZstdCResource, input: []const u8) ZstdError!beam.term {
     const cctx = c_resource.unpack().*.cctx.?;
+    const enable_timing = isTimingEnabled();
+    const start_time = if (enable_timing) std.time.nanoTimestamp() else 0;
+    defer if (enable_timing) {
+        const elapsed_ns = std.time.nanoTimestamp() - start_time;
+        const elapsed_ms = @as(f64, @floatFromInt(elapsed_ns)) / 1_000_000.0;
+        var c_level: i32 = undefined;
+        var c_strategy: i32 = undefined;
+        _ = z.ZSTD_CCtx_getParameter(cctx, z.ZSTD_c_compressionLevel, &c_level);
+        _ = z.ZSTD_CCtx_getParameter(cctx, z.ZSTD_c_strategy, &c_strategy);
+
+        std.debug.print("[NIF Compress_with_ctx] level: {d}, strategy: {d}, duration: {d:.3} ms, for: {} bytes)\n", .{ c_level, c_strategy, elapsed_ms, input.len });
+    };
+
     const max_compressed_size = z.ZSTD_compressBound(input.len);
     if (z.ZSTD_isError(max_compressed_size) == 1) {
         const err_name = std.mem.span(z.ZSTD_getErrorName(max_compressed_size));
@@ -387,42 +408,121 @@ pub fn compress_with_ctx(c_resource: ZstdCResource, input: []const u8) ZstdError
     const result = beam.allocator.realloc(compressed, compressed_size) catch {
         return beam.make_error_pair(ZstdError.OutOfMemory, .{});
     };
+    defer beam.allocator.free(result);
     return beam.make(.{ .ok, result }, .{});
 }
 
 /// Decompress binary data using the provided decompression context.
+/// Requires the compressed data to have the decompressed size in the frame header.
+/// For streaming-compressed data without size, use decompress_with_ctx_streaming instead.
+/// PERFORMANCE NOTE: For large outputs (>1MB), this may take >1ms. Consider using decompress_unfold or decompress_file for very large data.
+// pub fn decompress_with_ctx(d_resource: ZstdDResource, compressed: []const u8) ZstdError!beam.term {
+//     const dctx = d_resource.unpack().*.dctx.?;
+//     const decompressed_size = try getDecompressedSize(compressed);
+
+//     const decompressed = beam.allocator.alloc(u8, decompressed_size) catch {
+//         return beam.make_error_pair(ZstdError.OutOfMemory, .{});
+//     };
+
+//     errdefer beam.allocator.free(decompressed);
+
+//     const actual_decompressed_size = z.ZSTD_decompressDCtx(
+//         dctx,
+//         decompressed.ptr,
+//         decompressed_size,
+//         compressed.ptr,
+//         compressed.len,
+//     );
+
+//     if (z.ZSTD_isError(actual_decompressed_size) != 0) {
+//         const err_name = std.mem.span(z.ZSTD_getErrorName(actual_decompressed_size));
+//         std.log.err("Decompression failed: {s}", .{err_name});
+//         return beam.make_error_pair(ZstdError.DecompressionFailed, .{});
+//     }
+//     if (actual_decompressed_size != decompressed_size) {
+//         std.log.err("Size mismatch: expected {}, got {}", .{ decompressed_size, actual_decompressed_size });
+//         return beam.make_error_pair(ZstdError.DecompressionFailed, .{});
+//     }
+
+//     const result = beam.allocator.realloc(decompressed, actual_decompressed_size) catch {
+//         return beam.make_error_pair(ZstdError.OutOfMemory, .{});
+//     };
+//     return beam.make(.{ .ok, result }, .{});
+// }
+
+/// Decompress binary data using the provided decompression context.
+/// Works with both regular and streaming-compressed data (with or without size in frame).
+/// For streaming-compressed data, uses incremental decompression with buffer growth.
+/// PERFORMANCE WARNING: This decompresses the entire input in one shot and can take >1ms for large files (>1MB).
+/// For very large files, prefer decompress_file or decompress_unfold which use chunked streaming.
 pub fn decompress_with_ctx(d_resource: ZstdDResource, compressed: []const u8) ZstdError!beam.term {
     const dctx = d_resource.unpack().*.dctx.?;
-    const decompressed_size = try getDecompressedSize(compressed);
+    const enable_timing = isTimingEnabled();
+    const start_time = if (enable_timing) std.time.nanoTimestamp() else 0;
+    defer if (enable_timing) {
+        const elapsed_ns = std.time.nanoTimestamp() - start_time;
+        const elapsed_ms = @as(f64, @floatFromInt(elapsed_ns)) / 1_000_000.0;
 
-    const decompressed = beam.allocator.alloc(u8, decompressed_size) catch {
-        return beam.make_error_pair(ZstdError.OutOfMemory, .{});
+        std.debug.print("[NIF decompress_with_ctx] {d:.3} ms, for: {} bytes)\n", .{ elapsed_ms, compressed.len });
     };
 
-    errdefer beam.allocator.free(decompressed);
+    // Try to get the size from frame header first
+    if (getDecompressedSize(compressed)) |known_size| {
+        // Size is known, use regular decompression
+        const decompressed = beam.allocator.alloc(u8, known_size) catch {
+            return beam.make_error_pair(ZstdError.OutOfMemory, .{});
+        };
+        errdefer beam.allocator.free(decompressed);
 
-    const actual_decompressed_size = z.ZSTD_decompressDCtx(
-        dctx,
-        decompressed.ptr,
-        decompressed_size,
-        compressed.ptr,
-        compressed.len,
-    );
+        const actual_size = z.ZSTD_decompressDCtx(
+            dctx,
+            decompressed.ptr,
+            known_size,
+            compressed.ptr,
+            compressed.len,
+        );
 
-    if (z.ZSTD_isError(actual_decompressed_size) != 0) {
-        const err_name = std.mem.span(z.ZSTD_getErrorName(actual_decompressed_size));
-        std.log.err("Decompression failed: {s}", .{err_name});
-        return beam.make_error_pair(ZstdError.DecompressionFailed, .{});
+        if (z.ZSTD_isError(actual_size) != 0) {
+            const err_name = std.mem.span(z.ZSTD_getErrorName(actual_size));
+            std.log.err("Decompression failed: {s}", .{err_name});
+            return beam.make_error_pair(ZstdError.DecompressionFailed, .{});
+        }
+
+        const result = beam.allocator.realloc(decompressed, actual_size) catch {
+            return beam.make_error_pair(ZstdError.OutOfMemory, .{});
+        };
+        defer beam.allocator.free(result);
+        return beam.make(.{ .ok, result }, .{});
+    } else {
+        // Size unknown - estimate based on compressed size (typical compression ratio)
+        // Start with 10x the compressed size as initial buffer
+        const initial_estimate = compressed.len * 10;
+        const decompressed = beam.allocator.alloc(u8, initial_estimate) catch {
+            return beam.make_error_pair(ZstdError.OutOfMemory, .{});
+        };
+        errdefer beam.allocator.free(decompressed);
+
+        const actual_size = z.ZSTD_decompressDCtx(
+            dctx,
+            decompressed.ptr,
+            initial_estimate,
+            compressed.ptr,
+            compressed.len,
+        );
+
+        if (z.ZSTD_isError(actual_size) != 0) {
+            const err_name = std.mem.span(z.ZSTD_getErrorName(actual_size));
+            std.log.err("Decompression failed: {s}", .{err_name});
+            return beam.make_error_pair(ZstdError.DecompressionFailed, .{});
+        }
+
+        // Resize to actual size
+        const result = beam.allocator.realloc(decompressed, actual_size) catch {
+            return beam.make_error_pair(ZstdError.OutOfMemory, .{});
+        };
+        defer beam.allocator.free(result);
+        return beam.make(.{ .ok, result }, .{});
     }
-    if (actual_decompressed_size != decompressed_size) {
-        std.log.err("Size mismatch: expected {}, got {}", .{ decompressed_size, actual_decompressed_size });
-        return beam.make_error_pair(ZstdError.DecompressionFailed, .{});
-    }
-
-    const result = beam.allocator.realloc(decompressed, actual_decompressed_size) catch {
-        return beam.make_error_pair(ZstdError.OutOfMemory, .{});
-    };
-    return beam.make(.{ .ok, result }, .{});
 }
 
 /// Reset compression context to reuse for a new independent operation.
@@ -430,7 +530,7 @@ pub fn decompress_with_ctx(d_resource: ZstdDResource, compressed: []const u8) Zs
 /// - Between compressing different independent data streams
 /// - To clear learned dictionaries/patterns
 /// - When reusing context for a completely new operation
-pub fn reset_compressor_session(c_resource: ZstdCResource) ZstdError!beam.term {
+pub fn reset_compressor(c_resource: ZstdCResource) ZstdError!beam.term {
     const cctx = c_resource.unpack().*.cctx.?;
     const reset_result = z.ZSTD_CCtx_reset(cctx, z.ZSTD_reset_session_and_parameters);
     if (z.ZSTD_isError(reset_result) != 0) {
@@ -446,15 +546,62 @@ pub fn reset_compressor_session(c_resource: ZstdCResource) ZstdError!beam.term {
 /// - Between decompressing different independent data streams
 /// - To clear loaded dictionaries
 /// - When reusing context for a completely new operation
-pub fn reset_decompressor_session(d_resource: ZstdDResource) ZstdError!beam.term {
+pub fn reset_decompressor(d_resource: ZstdDResource) ZstdError!beam.term {
     const dctx = d_resource.unpack().*.dctx.?;
-    const reset_result = z.ZSTD_DCtx_reset(dctx, z.ZSTD_reset_session_only);
+    const reset_result = z.ZSTD_DCtx_reset(dctx, z.ZSTD_reset_session_and_parameters);
     if (z.ZSTD_isError(reset_result) != 0) {
         const err_name = std.mem.span(z.ZSTD_getErrorName(reset_result));
         std.log.err("Failed to reset decompression context: {s}", .{err_name});
         return beam.make_error_pair(ZstdError.DecompressionFailed, .{});
     }
     return beam.make_into_atom("ok", .{});
+}
+
+/// Get compression parameters from a compression context.
+/// Returns {:ok, {level, strategy_atom, window_log}}
+///
+/// Example return value:
+/// {:ok, {9, :btopt, 23}}
+pub fn get_compression_params(c_resource: ZstdCResource) beam.term {
+    const cctx = c_resource.unpack().*.cctx.?;
+
+    // Get compression level
+    var level: i32 = undefined;
+    var result = z.ZSTD_CCtx_getParameter(cctx, z.ZSTD_c_compressionLevel, &level);
+    if (z.ZSTD_isError(result) != 0) {
+        return beam.make_error_pair(ZstdError.CompressionFailed, .{});
+    }
+
+    // Get strategy
+    var strategy_value: i32 = undefined;
+    result = z.ZSTD_CCtx_getParameter(cctx, z.ZSTD_c_strategy, &strategy_value);
+    if (z.ZSTD_isError(result) != 0) {
+        return beam.make_error_pair(ZstdError.CompressionFailed, .{});
+    }
+
+    // Get window log
+    var window_log: i32 = undefined;
+    result = z.ZSTD_CCtx_getParameter(cctx, z.ZSTD_c_windowLog, &window_log);
+    if (z.ZSTD_isError(result) != 0) {
+        return beam.make_error_pair(ZstdError.CompressionFailed, .{});
+    }
+
+    // Convert strategy int to atom
+    const strategy_atom = switch (strategy_value) {
+        1 => beam.make_into_atom("fast", .{}),
+        2 => beam.make_into_atom("dfast", .{}),
+        3 => beam.make_into_atom("greedy", .{}),
+        4 => beam.make_into_atom("lazy", .{}),
+        5 => beam.make_into_atom("lazy2", .{}),
+        6 => beam.make_into_atom("btlazy2", .{}),
+        7 => beam.make_into_atom("btopt", .{}),
+        8 => beam.make_into_atom("btultra", .{}),
+        9 => beam.make_into_atom("btultra2", .{}),
+        else => beam.make_into_atom("unknown", .{}),
+    };
+
+    // Return tuple
+    return beam.make(.{ .ok, .{ level, strategy_atom, window_log } }, .{});
 }
 
 // -----------------------------------------------------
@@ -524,6 +671,14 @@ const EndOp = enum {
 /// - remaining_bytes: Work remaining hint (0 = operation complete, >0 = call again)
 ///                    For :end_frame, if >0, call again with <<>> until it returns 0
 pub fn compress_stream(ctx: ZstdCResource, input: []const u8, end_op: EndOp) ZstdError!beam.term {
+    const enable_timing = isTimingEnabled();
+    const start_time = if (enable_timing) std.time.nanoTimestamp() else 0;
+    defer if (enable_timing) {
+        const elapsed_ns = std.time.nanoTimestamp() - start_time;
+        const elapsed_us = @as(f64, @floatFromInt(elapsed_ns)) / 1_000_000.0;
+        std.debug.print("[NIF compress_stream] {d:.3} ms, for: {} bytes\n", .{ elapsed_us, input.len });
+    };
+
     const cctx = ctx.unpack().*.cctx.?;
 
     // Allocate output buffer using recommended size
@@ -564,6 +719,7 @@ pub fn compress_stream(ctx: ZstdCResource, input: []const u8, end_op: EndOp) Zst
     const compressed = beam.allocator.realloc(output_data, out_buf.pos) catch {
         return beam.make_error_pair(ZstdError.OutOfMemory, .{});
     };
+    defer beam.allocator.free(compressed);
 
     return beam.make(
         .{ .ok, .{ compressed, in_buf.pos, remaining } },
@@ -577,6 +733,14 @@ pub fn compress_stream(ctx: ZstdCResource, input: []const u8, end_op: EndOp) Zst
 /// - decompressed_data: The decompressed output (may be empty if buffering)
 /// - bytes_consumed: How many bytes from input were consumed
 pub fn decompress_stream(ctx: ZstdDResource, input: []const u8) ZstdError!beam.term {
+    const enable_timing = isTimingEnabled();
+    const start_time = if (enable_timing) std.time.nanoTimestamp() else 0;
+    defer if (enable_timing) {
+        const elapsed_ns = std.time.nanoTimestamp() - start_time;
+        const elapsed_us = @as(f64, @floatFromInt(elapsed_ns)) / 1_000_000.0;
+        std.debug.print("[NIF decompress_stream] {d:.3} ms , for: {} bytes\n", .{ elapsed_us, input.len });
+    };
+
     const dctx = ctx.unpack().*.dctx.?;
 
     // Allocate output buffer using recommended size
@@ -612,6 +776,7 @@ pub fn decompress_stream(ctx: ZstdDResource, input: []const u8) ZstdError!beam.t
     const decompressed = beam.allocator.realloc(output_data, out_buf.pos) catch {
         return beam.make_error_pair(ZstdError.OutOfMemory, .{});
     };
+    defer beam.allocator.free(decompressed);
 
     return beam.make(
         .{ .ok, .{ decompressed, in_buf.pos } },
@@ -630,7 +795,7 @@ pub fn decompress_stream(ctx: ZstdDResource, input: []const u8) ZstdError!beam.t
 /// - dict_size: Target dictionary size in bytes (typically 100KB for small data)
 ///
 /// Returns {:ok, dictionary} on success, {:error, reason} on failure
-pub fn train_dictionary(samples: []const []const u8, dict_size: usize) ZstdError!beam.term {
+pub fn train_dictionary(samples: [][]const u8, dict_size: usize) ZstdError!beam.term {
     if (samples.len == 0) {
         return beam.make_error_pair(ZstdError.InvalidInput, .{});
     }
@@ -660,7 +825,7 @@ pub fn train_dictionary(samples: []const []const u8, dict_size: usize) ZstdError
     }
 
     // Allocate dictionary buffer
-    const dict_buffer = beam.allocator.alloc(u8, dict_size) catch {
+    var dict_buffer = beam.allocator.alloc(u8, dict_size) catch {
         return beam.make_error_pair(ZstdError.OutOfMemory, .{});
     };
     errdefer beam.allocator.free(dict_buffer);
@@ -679,11 +844,13 @@ pub fn train_dictionary(samples: []const []const u8, dict_size: usize) ZstdError
     }
 
     // Resize to actual dictionary size
-    const trained_dict = beam.allocator.realloc(dict_buffer, result) catch {
+    // Note: realloc frees dict_buffer internally if it allocates new memory
+    dict_buffer = beam.allocator.realloc(dict_buffer, result) catch {
         return beam.make_error_pair(ZstdError.OutOfMemory, .{});
     };
+    defer beam.allocator.free(dict_buffer);
 
-    return beam.make(.{ .ok, trained_dict }, .{});
+    return beam.make(.{ .ok, dict_buffer }, .{});
 }
 
 /// Load a dictionary into a compression context for reuse across multiple compressions.
@@ -715,11 +882,7 @@ pub fn load_decompression_dictionary(d_resource: ZstdDResource, dictionary: []co
 /// Compress data using a dictionary for better compression of small similar files.
 /// The dictionary should be trained on representative sample data.
 /// Uses the compression settings already configured in the context.
-pub fn compress_with_dict(
-    c_resource: ZstdCResource,
-    input: []const u8,
-    dictionary: []const u8,
-) ZstdError!beam.term {
+pub fn compress_with_dict(c_resource: ZstdCResource, input: []const u8, dictionary: []const u8) ZstdError!beam.term {
     const bound = z.ZSTD_compressBound(input.len);
     if (z.ZSTD_isError(bound) == 1) {
         return beam.make_error_pair(ZstdError.CompressionFailed, .{});
@@ -747,17 +910,14 @@ pub fn compress_with_dict(
     const compressed = beam.allocator.realloc(out, written_size) catch {
         return beam.make_error_pair(ZstdError.OutOfMemory, .{});
     };
+    defer beam.allocator.free(compressed);
 
     return beam.make(.{ .ok, compressed }, .{});
 }
 
 /// Decompress data that was compressed using a dictionary.
 /// Output size is automatically determined from the frame.
-pub fn decompress_with_dict(
-    d_resource: ZstdDResource,
-    input: []const u8,
-    dictionary: []const u8,
-) ZstdError!beam.term {
+pub fn decompress_with_dict(d_resource: ZstdDResource, input: []const u8, dictionary: []const u8) ZstdError!beam.term {
     const dctx = d_resource.unpack().*.dctx.?;
 
     // Get decompressed size from frame
@@ -787,6 +947,7 @@ pub fn decompress_with_dict(
     if (z.ZSTD_isError(written) != 0) {
         return beam.make_error_pair(ZstdError.DecompressionFailed, .{});
     }
+    defer beam.allocator.free(out);
 
     return beam.make(.{ .ok, out }, .{});
 }

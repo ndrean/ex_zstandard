@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.38.4">
+    <meta name="project" content="ExZstandard v0.1.0">
+
+
+    <title>ExZstandard — ExZstandard v0.1.0</title>
+
+    <link rel="stylesheet" href="dist/html-elixir-RLZO5U2C.css" />
+
+    <script defer src="dist/sidebar_items-07E54BD3.js"></script>
+    <script defer src="docs_config.js"></script>
+    <script defer src="dist/html-Y223O6DN.js"></script>
+
+  </head>
+  <body>
+    <script>(()=>{var t="ex_doc:settings",e="dark";var o="dark",s="light";var E="sidebar_state",n="closed";var r="sidebar_width";var a="sidebar-open";var i=new URLSearchParams(window.location.search),S=i.get("theme")||JSON.parse(localStorage.getItem(t)||"{}").theme;(S===o||S!==s&&window.matchMedia("(prefers-color-scheme: dark)").matches)&&document.body.classList.add(e);var d=sessionStorage.getItem(E),A=d!==n&&!window.matchMedia(`screen and (max-width: ${768}px)`).matches;document.body.classList.toggle(a,A);var c=sessionStorage.getItem(r);c&&document.body.style.setProperty("--sidebarWidth",`${c}px`);var p=/(Macintosh|iPhone|iPad|iPod)/.test(window.navigator.userAgent);document.documentElement.classList.toggle("apple-os",p);})();
+</script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="ExZstandard.html" class="sidebar-projectName" translate="no">
+ExZstandard
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-list-nav" class="sidebar-list-nav" role="tablist" data-extras=""></ul>
+  </div>
+</nav>
+
+<output role="status" id="toast"></output>
+
+<main class="content page-module" id="main" data-type="modules">
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of ExZstandard</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search" tabindex="-1">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <div class="heading-with-actions top-heading">
+    <h1>
+      <span translate="no">ExZstandard</span> 
+      <small class="app-vsn" translate="no">(ExZstandard v0.1.0)</small>
+
+    </h1>
+
+      <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+  </div>
+
+
+    <section id="moduledoc">
+<p>Elixir bindings for the Zstandard (zstd) compression library, implemented in <a href="https://hexdocs.pm/zigler/0.15.1/Zig.html"><code class="inline">Zig</code></a> via the wonderful <code class="inline">Zigler</code> library.</p><p><code class="inline">Zstandard</code> is a fast compression algorithm providing high compression ratios. This library
+offers a complete API for compression and decompression with multiple usage patterns.</p><h2 id="module-features" class="section-heading"><a href="#module-features" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Features</span></h2><ul><li><strong>One-shot compression/decompression</strong> - Simple functions for complete data in memory</li><li><strong>Context-based operations</strong> - Reusable contexts for better performance across multiple operations</li><li><strong>Streaming API</strong> - Process large files without loading them entirely into memory</li><li><strong>Dictionary support</strong> - Train dictionaries for better compression of similar small files</li><li><strong>Compression strategies</strong> - Optimized presets for different data types (text, JSON, binary)</li><li><strong>File operations</strong> - High-level functions for compressing/decompressing files</li></ul><h2 id="module-installation" class="section-heading"><a href="#module-installation" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Installation</span></h2><p>Add to your <code class="inline">mix.exs</code>:</p><pre><code class="makeup elixir" translate="no"><span class="kd">def</span><span class="w"> </span><span class="nf">deps</span><span class="w"> </span><span class="k" data-group-id="5179956967-1">do</span><span class="w">
+  </span><span class="p" data-group-id="5179956967-2">[</span><span class="w">
+    </span><span class="p" data-group-id="5179956967-3">{</span><span class="ss">:ex_zstd_zig</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;~&gt; 0.1.0&quot;</span><span class="p" data-group-id="5179956967-3">}</span><span class="w">
+  </span><span class="p" data-group-id="5179956967-2">]</span><span class="w">
+</span><span class="k" data-group-id="5179956967-1">end</span></code></pre><p>Requires <code class="inline">libzstd</code> to be installed on your system:</p><ul><li>macOS: <code class="inline">brew install zstd</code></li><li>Ubuntu/Debian: <code class="inline">apt-get install libzstd-dev</code></li><li>Fedora: <code class="inline">dnf install libzstd-devel</code></li></ul><h2 id="module-quick-start" class="section-heading"><a href="#module-quick-start" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Quick Start</span></h2><h3 id="module-one-shot-compression" class="section-heading"><a href="#module-one-shot-compression" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">One-shot compression</span></h3><pre><code class="makeup elixir" translate="no"><span class="c1"># Compress data</span><span class="w">
+</span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Hello, World!&quot;</span><span class="w">
+</span><span class="p" data-group-id="3075411333-1">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">compressed</span><span class="p" data-group-id="3075411333-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">compress</span><span class="p" data-group-id="3075411333-2">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="3075411333-2">)</span><span class="w">
+
+</span><span class="c1"># Decompress</span><span class="w">
+</span><span class="p" data-group-id="3075411333-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">decompressed</span><span class="p" data-group-id="3075411333-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">decompress</span><span class="p" data-group-id="3075411333-4">(</span><span class="n">compressed</span><span class="p" data-group-id="3075411333-4">)</span></code></pre><h3 id="module-file-compression" class="section-heading"><a href="#module-file-compression" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">File compression</span></h3><pre><code class="makeup elixir" translate="no"><span class="c1"># Compress a file</span><span class="w">
+</span><span class="ss">:ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">compress_file</span><span class="p" data-group-id="4274753116-1">(</span><span class="s">&quot;input.txt&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;output.txt.zst&quot;</span><span class="p" data-group-id="4274753116-1">)</span><span class="w">
+
+</span><span class="c1"># Decompress a file</span><span class="w">
+</span><span class="ss">:ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">decompress_file</span><span class="p" data-group-id="4274753116-2">(</span><span class="s">&quot;output.txt.zst&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;restored.txt&quot;</span><span class="p" data-group-id="4274753116-2">)</span></code></pre><h3 id="module-context-reuse-for-better-performance" class="section-heading"><a href="#module-context-reuse-for-better-performance" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Context reuse for better performance</span></h3><pre><code class="makeup elixir" translate="no"><span class="c1"># Create a context once (use recipe defaults for text compression)</span><span class="w">
+</span><span class="p" data-group-id="6252921249-1">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">cctx</span><span class="p" data-group-id="6252921249-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">cctx_init</span><span class="p" data-group-id="6252921249-2">(</span><span class="p" data-group-id="6252921249-3">%{</span><span class="ss">strategy</span><span class="p">:</span><span class="w"> </span><span class="ss">:text</span><span class="p" data-group-id="6252921249-3">}</span><span class="p" data-group-id="6252921249-2">)</span><span class="w">
+
+</span><span class="c1"># Compress multiple items</span><span class="w">
+</span><span class="p" data-group-id="6252921249-4">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">compressed1</span><span class="p" data-group-id="6252921249-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">compress_with_ctx</span><span class="p" data-group-id="6252921249-5">(</span><span class="n">cctx</span><span class="p">,</span><span class="w"> </span><span class="n">data1</span><span class="p" data-group-id="6252921249-5">)</span><span class="w">
+</span><span class="ss">:ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">reset_compressor_session</span><span class="p" data-group-id="6252921249-6">(</span><span class="n">cctx</span><span class="p" data-group-id="6252921249-6">)</span><span class="w">
+</span><span class="p" data-group-id="6252921249-7">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">compressed2</span><span class="p" data-group-id="6252921249-7">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">compress_with_ctx</span><span class="p" data-group-id="6252921249-8">(</span><span class="n">cctx</span><span class="p">,</span><span class="w"> </span><span class="n">data2</span><span class="p" data-group-id="6252921249-8">)</span></code></pre><h3 id="module-streaming-compression" class="section-heading"><a href="#module-streaming-compression" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Streaming compression</span></h3><p>The <a href="#compress_stream/3"><code class="inline">compress_stream/3</code></a> function accepts three modes:</p><ul><li><strong><code class="inline">:continue_op</code></strong> - Better compression (buffers data, may produce no output)</li><li><strong><code class="inline">:flush</code></strong> - Guaranteed output per chunk (for real-time streaming)</li><li><strong><code class="inline">:end_frame</code></strong> - Finalize frame (required to complete compression)</li></ul><pre><code class="makeup elixir" translate="no"><span class="p" data-group-id="4834522486-1">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">cctx</span><span class="p" data-group-id="4834522486-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">cctx_init</span><span class="p" data-group-id="4834522486-2">(</span><span class="p" data-group-id="4834522486-3">%{</span><span class="ss">compression_level</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="ss">strategy</span><span class="p">:</span><span class="w"> </span><span class="ss">:balanced</span><span class="p" data-group-id="4834522486-3">}</span><span class="p" data-group-id="4834522486-2">)</span><span class="w">
+
+</span><span class="c1"># Option 1: Better compression with :continue_op (batch processing)</span><span class="w">
+</span><span class="p" data-group-id="4834522486-4">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4834522486-5">{</span><span class="n">out1</span><span class="p">,</span><span class="w"> </span><span class="bp">_</span><span class="p">,</span><span class="w"> </span><span class="bp">_</span><span class="p" data-group-id="4834522486-5">}</span><span class="p" data-group-id="4834522486-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">compress_stream</span><span class="p" data-group-id="4834522486-6">(</span><span class="n">cctx</span><span class="p">,</span><span class="w"> </span><span class="n">data_chunk1</span><span class="p">,</span><span class="w"> </span><span class="ss">:continue_op</span><span class="p" data-group-id="4834522486-6">)</span><span class="w">
+</span><span class="p" data-group-id="4834522486-7">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4834522486-8">{</span><span class="n">out2</span><span class="p">,</span><span class="w"> </span><span class="bp">_</span><span class="p">,</span><span class="w"> </span><span class="bp">_</span><span class="p" data-group-id="4834522486-8">}</span><span class="p" data-group-id="4834522486-7">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">compress_stream</span><span class="p" data-group-id="4834522486-9">(</span><span class="n">cctx</span><span class="p">,</span><span class="w"> </span><span class="n">data_chunk2</span><span class="p">,</span><span class="w"> </span><span class="ss">:continue_op</span><span class="p" data-group-id="4834522486-9">)</span><span class="w">
+</span><span class="p" data-group-id="4834522486-10">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4834522486-11">{</span><span class="n">final</span><span class="p">,</span><span class="w"> </span><span class="bp">_</span><span class="p">,</span><span class="w"> </span><span class="bp">_</span><span class="p" data-group-id="4834522486-11">}</span><span class="p" data-group-id="4834522486-10">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">compress_stream</span><span class="p" data-group-id="4834522486-12">(</span><span class="n">cctx</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4834522486-13">&lt;&lt;</span><span class="p" data-group-id="4834522486-13">&gt;&gt;</span><span class="p">,</span><span class="w"> </span><span class="ss">:end_frame</span><span class="p" data-group-id="4834522486-12">)</span><span class="w">
+</span><span class="n">compressed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">IO</span><span class="o">.</span><span class="n">iodata_to_binary</span><span class="p" data-group-id="4834522486-14">(</span><span class="p" data-group-id="4834522486-15">[</span><span class="n">out1</span><span class="p">,</span><span class="w"> </span><span class="n">out2</span><span class="p">,</span><span class="w"> </span><span class="n">final</span><span class="p" data-group-id="4834522486-15">]</span><span class="p" data-group-id="4834522486-14">)</span><span class="w">
+
+</span><span class="c1"># Option 2: Real-time streaming with :flush (HTTP, network)</span><span class="w">
+</span><span class="p" data-group-id="4834522486-16">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4834522486-17">{</span><span class="n">chunk1</span><span class="p">,</span><span class="w"> </span><span class="bp">_</span><span class="p">,</span><span class="w"> </span><span class="bp">_</span><span class="p" data-group-id="4834522486-17">}</span><span class="p" data-group-id="4834522486-16">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">compress_stream</span><span class="p" data-group-id="4834522486-18">(</span><span class="n">cctx</span><span class="p">,</span><span class="w"> </span><span class="n">data_chunk1</span><span class="p">,</span><span class="w"> </span><span class="ss">:flush</span><span class="p" data-group-id="4834522486-18">)</span><span class="w">
+</span><span class="p" data-group-id="4834522486-19">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4834522486-20">{</span><span class="n">chunk2</span><span class="p">,</span><span class="w"> </span><span class="bp">_</span><span class="p">,</span><span class="w"> </span><span class="bp">_</span><span class="p" data-group-id="4834522486-20">}</span><span class="p" data-group-id="4834522486-19">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">compress_stream</span><span class="p" data-group-id="4834522486-21">(</span><span class="n">cctx</span><span class="p">,</span><span class="w"> </span><span class="n">data_chunk2</span><span class="p">,</span><span class="w"> </span><span class="ss">:flush</span><span class="p" data-group-id="4834522486-21">)</span><span class="w">
+</span><span class="p" data-group-id="4834522486-22">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4834522486-23">{</span><span class="n">final</span><span class="p">,</span><span class="w"> </span><span class="bp">_</span><span class="p">,</span><span class="w"> </span><span class="bp">_</span><span class="p" data-group-id="4834522486-23">}</span><span class="p" data-group-id="4834522486-22">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">compress_stream</span><span class="p" data-group-id="4834522486-24">(</span><span class="n">cctx</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4834522486-25">&lt;&lt;</span><span class="p" data-group-id="4834522486-25">&gt;&gt;</span><span class="p">,</span><span class="w"> </span><span class="ss">:end_frame</span><span class="p" data-group-id="4834522486-24">)</span><span class="w">
+</span><span class="n">compressed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">IO</span><span class="o">.</span><span class="n">iodata_to_binary</span><span class="p" data-group-id="4834522486-26">(</span><span class="p" data-group-id="4834522486-27">[</span><span class="n">chunk1</span><span class="p">,</span><span class="w"> </span><span class="n">chunk2</span><span class="p">,</span><span class="w"> </span><span class="n">final</span><span class="p" data-group-id="4834522486-27">]</span><span class="p" data-group-id="4834522486-26">)</span></code></pre><h3 id="module-dictionary-compression" class="section-heading"><a href="#module-dictionary-compression" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Dictionary compression</span></h3><pre><code class="makeup elixir" translate="no"><span class="c1"># Train a dictionary from sample data</span><span class="w">
+</span><span class="n">samples</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="6355623964-1">[</span><span class="n">sample1</span><span class="p">,</span><span class="w"> </span><span class="n">sample2</span><span class="p">,</span><span class="w"> </span><span class="n">sample3</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="6355623964-1">]</span><span class="w">
+</span><span class="p" data-group-id="6355623964-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">dictionary</span><span class="p" data-group-id="6355623964-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">train_dictionary</span><span class="p" data-group-id="6355623964-3">(</span><span class="n">samples</span><span class="p">,</span><span class="w"> </span><span class="mi">1024</span><span class="p" data-group-id="6355623964-3">)</span><span class="w">
+
+</span><span class="c1"># Compress with dictionary</span><span class="w">
+</span><span class="p" data-group-id="6355623964-4">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">cctx</span><span class="p" data-group-id="6355623964-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">cctx_init</span><span class="p" data-group-id="6355623964-5">(</span><span class="p" data-group-id="6355623964-6">%{</span><span class="ss">compression_level</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="6355623964-6">}</span><span class="p" data-group-id="6355623964-5">)</span><span class="w">
+</span><span class="p" data-group-id="6355623964-7">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">compressed</span><span class="p" data-group-id="6355623964-7">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">compress_with_dict</span><span class="p" data-group-id="6355623964-8">(</span><span class="n">cctx</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">dictionary</span><span class="p" data-group-id="6355623964-8">)</span><span class="w">
+
+</span><span class="c1"># Decompress with dictionary</span><span class="w">
+</span><span class="p" data-group-id="6355623964-9">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">dctx</span><span class="p" data-group-id="6355623964-9">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">dctx_init</span><span class="p" data-group-id="6355623964-10">(</span><span class="no">nil</span><span class="p" data-group-id="6355623964-10">)</span><span class="w">
+</span><span class="p" data-group-id="6355623964-11">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">decompressed</span><span class="p" data-group-id="6355623964-11">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">decompress_with_dict</span><span class="p" data-group-id="6355623964-12">(</span><span class="n">dctx</span><span class="p">,</span><span class="w"> </span><span class="n">compressed</span><span class="p">,</span><span class="w"> </span><span class="n">dictionary</span><span class="p" data-group-id="6355623964-12">)</span></code></pre><h2 id="module-compression-strategies" class="section-heading"><a href="#module-compression-strategies" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Compression Strategies</span></h2><p>Each recipe provides optimized defaults for compression level and ZSTD algorithm:</p><ul><li><code class="inline">:fast</code> - Fastest compression (level 1, fast algorithm)</li><li><code class="inline">:balanced</code> - Good balance of speed/ratio (level 3, dfast algorithm, default)</li><li><code class="inline">:maximum</code> - Maximum compression (level 22, btultra2 algorithm)</li><li><code class="inline">:text</code> - Optimized for text/code (level 9, btopt algorithm)</li><li><code class="inline">:structured_data</code> - Optimized for JSON/XML (level 9, btultra algorithm)</li><li><code class="inline">:binary</code> - Optimized for binary data (level 6, lazy2 algorithm)</li></ul><h3 id="module-configuration-flexibility" class="section-heading"><a href="#module-configuration-flexibility" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Configuration Flexibility</span></h3><p>You can use recipes in multiple ways:</p><pre><code class="makeup elixir" translate="no"><span class="c1"># Use recipe defaults (recommended)</span><span class="w">
+</span><span class="p" data-group-id="7343271386-1">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">cctx</span><span class="p" data-group-id="7343271386-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">cctx_init</span><span class="p" data-group-id="7343271386-2">(</span><span class="p" data-group-id="7343271386-3">%{</span><span class="ss">strategy</span><span class="p">:</span><span class="w"> </span><span class="ss">:text</span><span class="p" data-group-id="7343271386-3">}</span><span class="p" data-group-id="7343271386-2">)</span><span class="w">
+</span><span class="c1"># → level 9 + btopt algorithm</span><span class="w">
+
+</span><span class="c1"># Override level while keeping recipe&#39;s algorithm</span><span class="w">
+</span><span class="p" data-group-id="7343271386-4">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">cctx</span><span class="p" data-group-id="7343271386-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">cctx_init</span><span class="p" data-group-id="7343271386-5">(</span><span class="p" data-group-id="7343271386-6">%{</span><span class="ss">compression_level</span><span class="p">:</span><span class="w"> </span><span class="mi">15</span><span class="p">,</span><span class="w"> </span><span class="ss">strategy</span><span class="p">:</span><span class="w"> </span><span class="ss">:text</span><span class="p" data-group-id="7343271386-6">}</span><span class="p" data-group-id="7343271386-5">)</span><span class="w">
+</span><span class="c1"># → level 15 + btopt algorithm</span><span class="w">
+
+</span><span class="c1"># Custom level with default algorithm</span><span class="w">
+</span><span class="p" data-group-id="7343271386-7">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">cctx</span><span class="p" data-group-id="7343271386-7">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">cctx_init</span><span class="p" data-group-id="7343271386-8">(</span><span class="p" data-group-id="7343271386-9">%{</span><span class="ss">compression_level</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="7343271386-9">}</span><span class="p" data-group-id="7343271386-8">)</span><span class="w">
+</span><span class="c1"># → level 5 + dfast algorithm</span><span class="w">
+
+</span><span class="c1"># Use all defaults</span><span class="w">
+</span><span class="p" data-group-id="7343271386-10">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">cctx</span><span class="p" data-group-id="7343271386-10">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">cctx_init</span><span class="p" data-group-id="7343271386-11">(</span><span class="p" data-group-id="7343271386-12">%{</span><span class="p" data-group-id="7343271386-12">}</span><span class="p" data-group-id="7343271386-11">)</span><span class="w">
+</span><span class="c1"># → level 3 + dfast algorithm</span></code></pre><h2 id="module-performance-tips" class="section-heading"><a href="#module-performance-tips" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Performance Tips</span></h2><ol><li><strong>Reuse contexts</strong> - Creating contexts has overhead. Reuse them with <code class="inline">reset_*_session/1</code></li><li><strong>Choose appropriate level</strong> - Level 3 is usually optimal. Higher levels give diminishing returns</li><li><strong>Use dictionaries</strong> - For many small similar files (&lt; 1KB each)</li><li><strong>Stream large files</strong> - Use <a href="#compress_file/3"><code class="inline">compress_file/3</code></a> or streaming API for files &gt; 100MB</li><li><strong>Pick the right strategy</strong> - Use <code class="inline">:text</code> for code, <code class="inline">:structured_data</code> for JSON/XML</li></ol><h2 id="module-function-categories" class="section-heading"><a href="#module-function-categories" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Function Categories</span></h2><h3 id="module-one-shot-functions" class="section-heading"><a href="#module-one-shot-functions" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">One-shot Functions</span></h3><ul><li><a href="#compress/2"><code class="inline">compress/2</code></a>, <a href="#decompress/1"><code class="inline">decompress/1</code></a> - Simple compression with tuple returns</li><li><a href="#simple_compress/2"><code class="inline">simple_compress/2</code></a>, <a href="#simple_auto_decompress/1"><code class="inline">simple_auto_decompress/1</code></a> - Direct result or error</li></ul><h3 id="module-context-management" class="section-heading"><a href="#module-context-management" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Context Management</span></h3><ul><li><a href="#cctx_init/1"><code class="inline">cctx_init/1</code></a>, <a href="#dctx_init/1"><code class="inline">dctx_init/1</code></a> - Create compression/decompression contexts</li><li><a href="#reset_compressor_session/1"><code class="inline">reset_compressor_session/1</code></a>, <a href="#reset_decompressor_session/1"><code class="inline">reset_decompressor_session/1</code></a> - Reset for reuse</li></ul><h3 id="module-context-based-operations" class="section-heading"><a href="#module-context-based-operations" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Context-based Operations</span></h3><ul><li><a href="#compress_with_ctx/2"><code class="inline">compress_with_ctx/2</code></a>, <a href="#decompress_with_ctx/2"><code class="inline">decompress_with_ctx/2</code></a> - Use existing contexts</li></ul><h3 id="module-streaming" class="section-heading"><a href="#module-streaming" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Streaming</span></h3><ul><li><a href="#compress_stream/3"><code class="inline">compress_stream/3</code></a>, <a href="#decompress_stream/2"><code class="inline">decompress_stream/2</code></a> - Process data in chunks</li><li><a href="#decompress_unfold/2"><code class="inline">decompress_unfold/2</code></a> - Convenient streaming decompression for in-memory binaries</li><li><a href="#recommended_c_in_size/0"><code class="inline">recommended_c_in_size/0</code></a>, <a href="#recommended_d_in_size/0"><code class="inline">recommended_d_in_size/0</code></a> - Get optimal buffer sizes</li></ul><h3 id="module-file-operations" class="section-heading"><a href="#module-file-operations" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">File Operations</span></h3><ul><li><a href="#compress_file/3"><code class="inline">compress_file/3</code></a>, <a href="#decompress_file/3"><code class="inline">decompress_file/3</code></a> - Handle files without loading into memory</li></ul><h3 id="module-dictionary-support" class="section-heading"><a href="#module-dictionary-support" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Dictionary Support</span></h3><ul><li><a href="#train_dictionary/2"><code class="inline">train_dictionary/2</code></a> - Train from sample data</li><li><a href="#load_compression_dictionary/2"><code class="inline">load_compression_dictionary/2</code></a>, <a href="#load_decompression_dictionary/2"><code class="inline">load_decompression_dictionary/2</code></a> - Load into contexts</li><li><a href="#compress_with_dict/3"><code class="inline">compress_with_dict/3</code></a>, <a href="#decompress_with_dict/3"><code class="inline">decompress_with_dict/3</code></a> - Compress/decompress with dictionary</li></ul><h3 id="module-utilities" class="section-heading"><a href="#module-utilities" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Utilities</span></h3><ul><li><a href="#getDecompressedSize/1"><code class="inline">getDecompressedSize/1</code></a> - Get decompressed size from compressed data</li><li><a href="#version/0"><code class="inline">version/0</code></a> - Get zstd library version</li></ul>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h1>
+<div class="summary-functions summary">
+  <h2>
+    <a href="#functions">Functions</a>
+  </h2>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#cctx_init/1" data-no-tooltip="" translate="no">cctx_init(arg1)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>The compression context initialization function.
+ It takes a CompressionConfig struct with optional compression_level (1-22) and optional strategy (CompressionRecipe).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#compress/2" data-no-tooltip="" translate="no">compress(arg1, arg2)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Compress binary data with specified compression level (1-22).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#compress_file/3" data-no-tooltip="" translate="no">compress_file(input_path, output_path, opts \\ [])</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Compress a file using streaming compression and write to output file as a side-effect.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#compress_stream/3" data-no-tooltip="" translate="no">compress_stream(arg1, arg2, arg3)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Compress a chunk of data using streaming compression.
+ Returns {:ok, {compressed_data, bytes_consumed, remaining_bytes}} or {:error, reason}</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#compress_with_ctx/2" data-no-tooltip="" translate="no">compress_with_ctx(arg1, arg2)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Compress binary data using the provided compression context.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#compress_with_dict/3" data-no-tooltip="" translate="no">compress_with_dict(arg1, arg2, arg3)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Compress data using a dictionary for better compression of small similar files.
+ The dictionary should be trained on representative sample data.
+ Uses the compression settings already configured in the context.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#dctx_init/1" data-no-tooltip="" translate="no">dctx_init(arg1)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>The decompression context initialization function.
+ It takes a max_window: Optional maximum window size as power of 2 (10-31), or <code class="inline">nil</code>.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#decompress/1" data-no-tooltip="" translate="no">decompress(arg1)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Decompress binary data with automatic output size detection.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#decompress_file/3" data-no-tooltip="" translate="no">decompress_file(input_path, output_path, opts \\ [])</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Decompress a file using streaming decompression and write to output file as a side-effect.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#decompress_stream/2" data-no-tooltip="" translate="no">decompress_stream(arg1, arg2)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Decompress a chunk of data using streaming decompression.
+ Returns {:ok, {decompressed_data, bytes_consumed}} or {:error, reason}</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#decompress_unfold/2" data-no-tooltip="" translate="no">decompress_unfold(input, opts \\ [])</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Decompress a compressed binary using streaming decompression with <code class="inline">Stream.unfold</code>. It returns the full decompressed binary.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#decompress_with_ctx/2" data-no-tooltip="" translate="no">decompress_with_ctx(arg1, arg2)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Decompress binary data using the provided decompression context.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#decompress_with_dict/3" data-no-tooltip="" translate="no">decompress_with_dict(arg1, arg2, arg3)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Decompress data that was compressed using a dictionary.
+ Output size is automatically determined from the frame.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#getDecompressedSize/1" data-no-tooltip="" translate="no">getDecompressedSize(arg1)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Get the decompressed size from the compressed data frame header.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#load_compression_dictionary/2" data-no-tooltip="" translate="no">load_compression_dictionary(arg1, arg2)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Load a dictionary into a compression context for reuse across multiple compressions.
+ The dictionary remains loaded until a new one is loaded or the context is reset.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#load_decompression_dictionary/2" data-no-tooltip="" translate="no">load_decompression_dictionary(arg1, arg2)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Load a dictionary into a decompression context for reuse across multiple decompressions.
+ The dictionary remains loaded until a new one is loaded or the context is reset.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#recommended_c_in_size/0" data-no-tooltip="" translate="no">recommended_c_in_size()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns the recommended input buffer size for streaming compression (typically 128KB)</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#recommended_c_out_size/0" data-no-tooltip="" translate="no">recommended_c_out_size()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns the recommended output buffer size for streaming compression</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#recommended_d_in_size/0" data-no-tooltip="" translate="no">recommended_d_in_size()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns the recommended input buffer size for streaming decompression (typically 128KB)</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#recommended_d_out_size/0" data-no-tooltip="" translate="no">recommended_d_out_size()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Returns the recommended output buffer size for streaming decompression (typically 128KB)</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#reset_compressor_session/1" data-no-tooltip="" translate="no">reset_compressor_session(arg1)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Reset compression context to reuse for a new independent operation.
+ Use this</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#reset_decompressor_session/1" data-no-tooltip="" translate="no">reset_decompressor_session(arg1)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Reset decompression context to reuse for a new independent operation.
+ Use this</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#simple_auto_decompress/1" data-no-tooltip="" translate="no">simple_auto_decompress(arg1)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Decompress binary data with automatic output size detection.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#simple_compress/2" data-no-tooltip="" translate="no">simple_compress(arg1, arg2)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Compress binary data with the specified <code class="inline">level</code> (1-22).
+ Returns the compressed data or an error if compression fails.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#simple_decompress/2" data-no-tooltip="" translate="no">simple_decompress(arg1, arg2)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Decompress binary data into a buffer of size <code class="inline">output_size</code>. Use <code class="inline">decompress</code> for automatic size detection instead.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#train_dictionary/2" data-no-tooltip="" translate="no">train_dictionary(arg1, arg2)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Train a dictionary from sample data for better compression of similar small files.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#version/0" data-no-tooltip="" translate="no">version()</a>
+
+      </div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h1>
+
+    <div class="functions-list">
+<section class="detail" id="cctx_init/1">
+
+  <div class="detail-header">
+    <a href="#cctx_init/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">cctx_init(arg1)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> cctx_init(
+  %{
+    optional(:compression_level) =&gt; -2_147_483_648..2_147_483_647 | nil,
+    optional(:strategy) =&gt;
+      (:text | :structured_data | :maximum | :fast | :binary | :balanced | 0..5)
+      | nil
+  }
+  | [
+      compression_level: -2_147_483_648..2_147_483_647 | nil,
+      strategy:
+        (:text
+         | :structured_data
+         | :maximum
+         | :fast
+         | :binary
+         | :balanced
+         | 0..5)
+        | nil
+    ]
+) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()</pre>
+
+      </div>
+
+<p>The compression context initialization function.
+ It takes a CompressionConfig struct with optional compression_level (1-22) and optional strategy (CompressionRecipe).</p><p> Usage:</p><ul><li>cctx_init(.{}) - Use defaults: level 3 + dfast strategy</li><li>cctx_init(.{.strategy = .text}) - Use recipe defaults: level 9 + btopt strategy</li><li>cctx_init(.{.compression_level = 15, .strategy = .text}) - Custom level with recipe strategy</li><li>cctx_init(.{.compression_level = 5}) - Custom level with default strategy</li></ul>
+  </section>
+</section>
+<section class="detail" id="compress/2">
+
+  <div class="detail-header">
+    <a href="#compress/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">compress(arg1, arg2)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> compress([<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">byte</a>()] | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>(), -2_147_483_648..2_147_483_647) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()</pre>
+
+      </div>
+
+<p>Compress binary data with specified compression level (1-22).</p>
+  </section>
+</section>
+<section class="detail" id="compress_file/3">
+
+    <span id="compress_file/2"></span>
+
+  <div class="detail-header">
+    <a href="#compress_file/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">compress_file(input_path, output_path, opts \\ [])</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L224" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Compress a file using streaming compression and write to output file as a side-effect.</p><p>This function provides true streaming compression - data is read, compressed,
+and written in chunks without loading the entire file into memory.</p><h2 id="compress_file/3-parameters" class="section-heading"><a href="#compress_file/3-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">input_path</code> - Path to the file to compress</li><li><code class="inline">output_path</code> - Path where compressed file will be written</li><li><code class="inline">opts</code> - Keyword list of options:<ul><li><code class="inline">:cctx</code> - Existing compression context to reuse (optional). If not provided, a new context will be created.</li><li><code class="inline">:compression_level</code> - Compression level (1-22), default: 3 (ignored if <code class="inline">:cctx</code> is provided)</li><li><code class="inline">:strategy</code> - Compression strategy (<code class="inline">:fast</code>, <code class="inline">:balanced</code>, etc.), default: <code class="inline">:balanced</code> (ignored if <code class="inline">:cctx</code> is provided)</li><li><code class="inline">:chunk_size</code> - Size of chunks to read/process, default: recommended size from zstd</li><li><code class="inline">:mode</code> - <code class="inline">:flush</code> (guaranteed output per chunk) or <code class="inline">:continue_op</code> (better compression), default: <code class="inline">:flush</code></li></ul></li></ul><h2 id="compress_file/3-returns" class="section-heading"><a href="#compress_file/3-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><ul><li><code class="inline">:ok</code> on success</li><li><code class="inline">{:error, reason}</code> on failure</li></ul><h2 id="compress_file/3-examples" class="section-heading"><a href="#compress_file/3-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="c1"># Auto-create context with defaults</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">compress_file</span><span class="p" data-group-id="1442348256-1">(</span><span class="s">&quot;input.txt&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;output.txt.zst&quot;</span><span class="p" data-group-id="1442348256-1">)</span><span class="w">
+</span><span class="ss">:ok</span><span class="w">
+
+</span><span class="c1"># Auto-create context with custom settings</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">compress_file</span><span class="p" data-group-id="1442348256-2">(</span><span class="s">&quot;input.txt&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;output.txt.zst&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">compression_level</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="ss">strategy</span><span class="p">:</span><span class="w"> </span><span class="ss">:text</span><span class="p" data-group-id="1442348256-2">)</span><span class="w">
+</span><span class="ss">:ok</span><span class="w">
+
+</span><span class="c1"># Reuse existing context for multiple files</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="p" data-group-id="1442348256-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">cctx</span><span class="p" data-group-id="1442348256-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">cctx_init</span><span class="p" data-group-id="1442348256-4">(</span><span class="p" data-group-id="1442348256-5">%{</span><span class="ss">compression_level</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="ss">strategy</span><span class="p">:</span><span class="w"> </span><span class="ss">:fast</span><span class="p" data-group-id="1442348256-5">}</span><span class="p" data-group-id="1442348256-4">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">compress_file</span><span class="p" data-group-id="1442348256-6">(</span><span class="s">&quot;file1.txt&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;file1.txt.zst&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">cctx</span><span class="p">:</span><span class="w"> </span><span class="n">cctx</span><span class="p" data-group-id="1442348256-6">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">reset_compressor_session</span><span class="p" data-group-id="1442348256-7">(</span><span class="n">cctx</span><span class="p" data-group-id="1442348256-7">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">compress_file</span><span class="p" data-group-id="1442348256-8">(</span><span class="s">&quot;file2.txt&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;file2.txt.zst&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">cctx</span><span class="p">:</span><span class="w"> </span><span class="n">cctx</span><span class="p" data-group-id="1442348256-8">)</span><span class="w">
+</span><span class="ss">:ok</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="compress_stream/3">
+
+  <div class="detail-header">
+    <a href="#compress_stream/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">compress_stream(arg1, arg2, arg3)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> compress_stream(
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">reference</a>(),
+  [<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">byte</a>()] | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>(),
+  :flush | :end_frame | :continue_op | 0..2
+) ::
+  <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()</pre>
+
+      </div>
+
+<p>Compress a chunk of data using streaming compression.
+ Returns {:ok, {compressed_data, bytes_consumed, remaining_bytes}} or {:error, reason}</p><p> Parameters:</p><ul><li>ctx: Compression context created with cctx_init</li><li>input: Data to compress (all input will be consumed)</li><li>end_op: Operation mode (see below)</li></ul><p> EndOp modes:</p><ul><li>:continue_op - Buffer data for better compression. May produce little/no output.<pre><code class="makeup elixir" translate="no"><span class="w">           </span><span class="nc">Use</span><span class="w"> </span><span class="ow">when</span><span class="w"> </span><span class="n">more</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">coming</span><span class="o">.</span></code></pre></li><li>:flush - Force output of buffered data into a complete block. Guarantees output.<pre><code class="makeup elixir" translate="no"><span class="w">     </span><span class="nc">Slightly</span><span class="w"> </span><span class="n">reduces</span><span class="w"> </span><span class="n">compression</span><span class="w"> </span><span class="n">ratio</span><span class="o">.</span><span class="w"> </span><span class="nc">Use</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">real</span><span class="o">-</span><span class="n">time</span><span class="w"> </span><span class="n">streaming</span><span class="o">.</span></code></pre></li><li>:end_frame - Finalize and close the frame. Call with empty input (&lt;&lt;&gt;&gt;) after<pre><code class="makeup elixir" translate="no"><span class="w">         </span><span class="n">all</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">sent</span><span class="p">,</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">last</span><span class="w"> </span><span class="n">chunk</span><span class="o">.</span><span class="w"> </span><span class="nc">Adds</span><span class="w"> </span><span class="n">frame</span><span class="w"> </span><span class="n">footer</span><span class="o">/</span><span class="n">checksum</span><span class="o">.</span></code></pre></li></ul><p> Return values:</p><ul><li>compressed_data: Compressed output (may be empty with :continue_op if buffering)</li><li>bytes_consumed: How many input bytes were processed (usually all)</li><li>remaining_bytes: Work remaining hint (0 = operation complete, &gt;0 = call again)<pre><code class="makeup elixir" translate="no"><span class="w">             </span><span class="nc">For</span><span class="w"> </span><span class="ss">:end_frame</span><span class="p">,</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="o">&gt;</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">call</span><span class="w"> </span><span class="n">again</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="p" data-group-id="2201177864-1">&lt;&lt;</span><span class="p" data-group-id="2201177864-1">&gt;&gt;</span><span class="w"> </span><span class="n">until</span><span class="w"> </span><span class="n">it</span><span class="w"> </span><span class="n">returns</span><span class="w"> </span><span class="mi">0</span></code></pre></li></ul>
+  </section>
+</section>
+<section class="detail" id="compress_with_ctx/2">
+
+  <div class="detail-header">
+    <a href="#compress_with_ctx/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">compress_with_ctx(arg1, arg2)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> compress_with_ctx(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">reference</a>(), [<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">byte</a>()] | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()</pre>
+
+      </div>
+
+<p>Compress binary data using the provided compression context.</p>
+  </section>
+</section>
+<section class="detail" id="compress_with_dict/3">
+
+  <div class="detail-header">
+    <a href="#compress_with_dict/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">compress_with_dict(arg1, arg2, arg3)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> compress_with_dict(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">reference</a>(), [<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">byte</a>()] | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>(), [<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">byte</a>()] | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()) ::
+  <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()</pre>
+
+      </div>
+
+<p>Compress data using a dictionary for better compression of small similar files.
+ The dictionary should be trained on representative sample data.
+ Uses the compression settings already configured in the context.</p>
+  </section>
+</section>
+<section class="detail" id="dctx_init/1">
+
+  <div class="detail-header">
+    <a href="#dctx_init/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">dctx_init(arg1)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> dctx_init(-2_147_483_648..2_147_483_647 | nil) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()</pre>
+
+      </div>
+
+<p>The decompression context initialization function.
+ It takes a max_window: Optional maximum window size as power of 2 (10-31), or <code class="inline">nil</code>.</p>
+  </section>
+</section>
+<section class="detail" id="decompress/1">
+
+  <div class="detail-header">
+    <a href="#decompress/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">decompress(arg1)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> decompress([<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">byte</a>()] | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()</pre>
+
+      </div>
+
+<p>Decompress binary data with automatic output size detection.</p>
+  </section>
+</section>
+<section class="detail" id="decompress_file/3">
+
+    <span id="decompress_file/2"></span>
+
+  <div class="detail-header">
+    <a href="#decompress_file/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">decompress_file(input_path, output_path, opts \\ [])</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L387" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Decompress a file using streaming decompression and write to output file as a side-effect.</p><p>This function provides true streaming decompression - data is read, decompressed,
+and written in chunks without loading the entire file into memory.</p><h2 id="decompress_file/3-parameters" class="section-heading"><a href="#decompress_file/3-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">input_path</code> - Path to the compressed file</li><li><code class="inline">output_path</code> - Path where decompressed file will be written</li><li><code class="inline">opts</code> - Keyword list of options:<ul><li><code class="inline">:dctx</code> - Existing decompression context to reuse (optional). If not provided, a new context will be created.</li><li><code class="inline">:max_window</code> - Maximum window size for decompression (10-31), default: nil (ignored if <code class="inline">:dctx</code> is provided)</li><li><code class="inline">:chunk_size</code> - Size of chunks to read, default: recommended size from zstd</li></ul></li></ul><h2 id="decompress_file/3-returns" class="section-heading"><a href="#decompress_file/3-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><ul><li><code class="inline">:ok</code> on success</li><li><code class="inline">{:error, reason}</code> on failure</li></ul><h2 id="decompress_file/3-examples" class="section-heading"><a href="#decompress_file/3-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="c1"># Auto-create context with defaults</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">decompress_file</span><span class="p" data-group-id="4308767680-1">(</span><span class="s">&quot;input.txt.zst&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;output.txt&quot;</span><span class="p" data-group-id="4308767680-1">)</span><span class="w">
+</span><span class="ss">:ok</span><span class="w">
+
+</span><span class="c1"># Auto-create context with max window size</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">decompress_file</span><span class="p" data-group-id="4308767680-2">(</span><span class="s">&quot;input.txt.zst&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;output.txt&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">max_window</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p" data-group-id="4308767680-2">)</span><span class="w">
+</span><span class="ss">:ok</span><span class="w">
+
+</span><span class="c1"># Reuse existing context for multiple files</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="p" data-group-id="4308767680-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">dctx</span><span class="p" data-group-id="4308767680-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">dctx_init</span><span class="p" data-group-id="4308767680-4">(</span><span class="no">nil</span><span class="p" data-group-id="4308767680-4">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">decompress_file</span><span class="p" data-group-id="4308767680-5">(</span><span class="s">&quot;file1.txt.zst&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;file1.txt&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">dctx</span><span class="p">:</span><span class="w"> </span><span class="n">dctx</span><span class="p" data-group-id="4308767680-5">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">reset_decompressor_session</span><span class="p" data-group-id="4308767680-6">(</span><span class="n">dctx</span><span class="p" data-group-id="4308767680-6">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">decompress_file</span><span class="p" data-group-id="4308767680-7">(</span><span class="s">&quot;file2.txt.zst&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;file2.txt&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">dctx</span><span class="p">:</span><span class="w"> </span><span class="n">dctx</span><span class="p" data-group-id="4308767680-7">)</span><span class="w">
+</span><span class="ss">:ok</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="decompress_stream/2">
+
+  <div class="detail-header">
+    <a href="#decompress_stream/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">decompress_stream(arg1, arg2)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> decompress_stream(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">reference</a>(), [<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">byte</a>()] | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()</pre>
+
+      </div>
+
+<p>Decompress a chunk of data using streaming decompression.
+ Returns {:ok, {decompressed_data, bytes_consumed}} or {:error, reason}</p><ul><li>decompressed_data: The decompressed output (may be empty if buffering)</li><li>bytes_consumed: How many bytes from input were consumed</li></ul>
+  </section>
+</section>
+<section class="detail" id="decompress_unfold/2">
+
+    <span id="decompress_unfold/1"></span>
+
+  <div class="detail-header">
+    <a href="#decompress_unfold/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">decompress_unfold(input, opts \\ [])</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L328" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+<p>Decompress a compressed binary using streaming decompression with <code class="inline">Stream.unfold</code>. It returns the full decompressed binary.</p><p>This function provides a convenient way to decompress data that's already in memory
+using streaming decompression internally. It's useful when you have compressed data
+as a binary and want to decompress it efficiently without loading it all at once
+into a single decompression call.</p><h2 id="decompress_unfold/2-when-to-use" class="section-heading"><a href="#decompress_unfold/2-when-to-use" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">When to use</span></h2><ul><li>You have compressed data in memory (not a file)</li><li>The compressed data is moderately sized (&lt; 100MB)</li><li>You want streaming decompression benefits without file I/O</li><li>You prefer a simpler API than manual <a href="#decompress_stream/2"><code class="inline">decompress_stream/2</code></a> calls</li></ul><h2 id="decompress_unfold/2-comparison-with-other-methods" class="section-heading"><a href="#decompress_unfold/2-comparison-with-other-methods" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Comparison with other methods</span></h2><ul><li>Use <a href="#decompress/1"><code class="inline">decompress/1</code></a> for small data when simplicity is preferred</li><li>Use <a href="#decompress_unfold/2"><code class="inline">decompress_unfold/2</code></a> for medium-sized data in memory with streaming benefits</li><li>Use <a href="#decompress_file/3"><code class="inline">decompress_file/3</code></a> for large files to avoid loading everything into memory</li></ul><h2 id="decompress_unfold/2-parameters" class="section-heading"><a href="#decompress_unfold/2-parameters" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Parameters</span></h2><ul><li><code class="inline">input</code> - Compressed binary data</li><li><code class="inline">opts</code> - Keyword list of options:<ul><li><code class="inline">:dctx</code> - Existing decompression context to reuse (optional)</li></ul></li></ul><h2 id="decompress_unfold/2-returns" class="section-heading"><a href="#decompress_unfold/2-returns" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Returns</span></h2><p>The decompressed binary (built in memory)</p><h2 id="decompress_unfold/2-examples" class="section-heading"><a href="#decompress_unfold/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Examples</span></h2><pre><code class="makeup elixir" translate="no"><span class="c1"># Simple usage - decompress a binary</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">compressed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">File</span><span class="o">.</span><span class="n">read!</span><span class="p" data-group-id="7660038705-1">(</span><span class="s">&quot;data.zst&quot;</span><span class="p" data-group-id="7660038705-1">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">decompressed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">decompress_unfold</span><span class="p" data-group-id="7660038705-2">(</span><span class="n">compressed</span><span class="p" data-group-id="7660038705-2">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">byte_size</span><span class="p" data-group-id="7660038705-3">(</span><span class="n">decompressed</span><span class="p" data-group-id="7660038705-3">)</span><span class="w">
+</span><span class="mi">1024000</span><span class="w">
+
+</span><span class="c1"># Reuse context for multiple decompressions</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="p" data-group-id="7660038705-4">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">dctx</span><span class="p" data-group-id="7660038705-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">dctx_init</span><span class="p" data-group-id="7660038705-5">(</span><span class="no">nil</span><span class="p" data-group-id="7660038705-5">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">data1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">decompress_unfold</span><span class="p" data-group-id="7660038705-6">(</span><span class="n">compressed1</span><span class="p">,</span><span class="w"> </span><span class="ss">dctx</span><span class="p">:</span><span class="w"> </span><span class="n">dctx</span><span class="p" data-group-id="7660038705-6">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">reset_decompressor_session</span><span class="p" data-group-id="7660038705-7">(</span><span class="n">dctx</span><span class="p" data-group-id="7660038705-7">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">data2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">ExZstandard</span><span class="o">.</span><span class="n">decompress_unfold</span><span class="p" data-group-id="7660038705-8">(</span><span class="n">compressed2</span><span class="p">,</span><span class="w"> </span><span class="ss">dctx</span><span class="p">:</span><span class="w"> </span><span class="n">dctx</span><span class="p" data-group-id="7660038705-8">)</span></code></pre><h2 id="decompress_unfold/2-notes" class="section-heading"><a href="#decompress_unfold/2-notes" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i></a><span class="text">Notes</span></h2><p>The entire decompressed result is built in memory. For very large data (&gt; 100MB),
+prefer <a href="#decompress_file/3"><code class="inline">decompress_file/3</code></a> which streams to disk.</p>
+  </section>
+</section>
+<section class="detail" id="decompress_with_ctx/2">
+
+  <div class="detail-header">
+    <a href="#decompress_with_ctx/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">decompress_with_ctx(arg1, arg2)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> decompress_with_ctx(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">reference</a>(), [<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">byte</a>()] | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()</pre>
+
+      </div>
+
+<p>Decompress binary data using the provided decompression context.</p>
+  </section>
+</section>
+<section class="detail" id="decompress_with_dict/3">
+
+  <div class="detail-header">
+    <a href="#decompress_with_dict/3" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">decompress_with_dict(arg1, arg2, arg3)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> decompress_with_dict(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">reference</a>(), [<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">byte</a>()] | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>(), [<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">byte</a>()] | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()) ::
+  <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()</pre>
+
+      </div>
+
+<p>Decompress data that was compressed using a dictionary.
+ Output size is automatically determined from the frame.</p>
+  </section>
+</section>
+<section class="detail" id="getDecompressedSize/1">
+
+  <div class="detail-header">
+    <a href="#getDecompressedSize/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">getDecompressedSize(arg1)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> getDecompressedSize([<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">byte</a>()] | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()) :: 0..18_446_744_073_709_551_615</pre>
+
+      </div>
+
+<p>Get the decompressed size from the compressed data frame header.</p>
+  </section>
+</section>
+<section class="detail" id="load_compression_dictionary/2">
+
+  <div class="detail-header">
+    <a href="#load_compression_dictionary/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">load_compression_dictionary(arg1, arg2)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> load_compression_dictionary(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">reference</a>(), [<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">byte</a>()] | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()</pre>
+
+      </div>
+
+<p>Load a dictionary into a compression context for reuse across multiple compressions.
+ The dictionary remains loaded until a new one is loaded or the context is reset.</p>
+  </section>
+</section>
+<section class="detail" id="load_decompression_dictionary/2">
+
+  <div class="detail-header">
+    <a href="#load_decompression_dictionary/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">load_decompression_dictionary(arg1, arg2)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> load_decompression_dictionary(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">reference</a>(), [<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">byte</a>()] | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()</pre>
+
+      </div>
+
+<p>Load a dictionary into a decompression context for reuse across multiple decompressions.
+ The dictionary remains loaded until a new one is loaded or the context is reset.</p>
+  </section>
+</section>
+<section class="detail" id="recommended_c_in_size/0">
+
+  <div class="detail-header">
+    <a href="#recommended_c_in_size/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">recommended_c_in_size()</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> recommended_c_in_size() :: 0..18_446_744_073_709_551_615</pre>
+
+      </div>
+
+<p>Returns the recommended input buffer size for streaming compression (typically 128KB)</p>
+  </section>
+</section>
+<section class="detail" id="recommended_c_out_size/0">
+
+  <div class="detail-header">
+    <a href="#recommended_c_out_size/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">recommended_c_out_size()</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> recommended_c_out_size() :: 0..18_446_744_073_709_551_615</pre>
+
+      </div>
+
+<p>Returns the recommended output buffer size for streaming compression</p>
+  </section>
+</section>
+<section class="detail" id="recommended_d_in_size/0">
+
+  <div class="detail-header">
+    <a href="#recommended_d_in_size/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">recommended_d_in_size()</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> recommended_d_in_size() :: 0..18_446_744_073_709_551_615</pre>
+
+      </div>
+
+<p>Returns the recommended input buffer size for streaming decompression (typically 128KB)</p>
+  </section>
+</section>
+<section class="detail" id="recommended_d_out_size/0">
+
+  <div class="detail-header">
+    <a href="#recommended_d_out_size/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">recommended_d_out_size()</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> recommended_d_out_size() :: 0..18_446_744_073_709_551_615</pre>
+
+      </div>
+
+<p>Returns the recommended output buffer size for streaming decompression (typically 128KB)</p>
+  </section>
+</section>
+<section class="detail" id="reset_compressor_session/1">
+
+  <div class="detail-header">
+    <a href="#reset_compressor_session/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">reset_compressor_session(arg1)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> reset_compressor_session(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">reference</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()</pre>
+
+      </div>
+
+<p>Reset compression context to reuse for a new independent operation.
+ Use this:</p><ul><li>Between compressing different independent data streams</li><li>To clear learned dictionaries/patterns</li><li>When reusing context for a completely new operation</li></ul>
+  </section>
+</section>
+<section class="detail" id="reset_decompressor_session/1">
+
+  <div class="detail-header">
+    <a href="#reset_decompressor_session/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">reset_decompressor_session(arg1)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> reset_decompressor_session(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">reference</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()</pre>
+
+      </div>
+
+<p>Reset decompression context to reuse for a new independent operation.
+ Use this:</p><ul><li>Between decompressing different independent data streams</li><li>To clear loaded dictionaries</li><li>When reusing context for a completely new operation</li></ul>
+  </section>
+</section>
+<section class="detail" id="simple_auto_decompress/1">
+
+  <div class="detail-header">
+    <a href="#simple_auto_decompress/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">simple_auto_decompress(arg1)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> simple_auto_decompress([<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">byte</a>()] | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()</pre>
+
+      </div>
+
+<p>Decompress binary data with automatic output size detection.</p>
+  </section>
+</section>
+<section class="detail" id="simple_compress/2">
+
+  <div class="detail-header">
+    <a href="#simple_compress/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">simple_compress(arg1, arg2)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> simple_compress([<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">byte</a>()] | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>(), -2_147_483_648..2_147_483_647) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()</pre>
+
+      </div>
+
+<p>Compress binary data with the specified <code class="inline">level</code> (1-22).
+ Returns the compressed data or an error if compression fails.</p>
+  </section>
+</section>
+<section class="detail" id="simple_decompress/2">
+
+  <div class="detail-header">
+    <a href="#simple_decompress/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">simple_decompress(arg1, arg2)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> simple_decompress([<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">byte</a>()] | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>(), 0..18_446_744_073_709_551_615) ::
+  <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()</pre>
+
+      </div>
+
+<p>Decompress binary data into a buffer of size <code class="inline">output_size</code>. Use <code class="inline">decompress</code> for automatic size detection instead.</p>
+  </section>
+</section>
+<section class="detail" id="train_dictionary/2">
+
+  <div class="detail-header">
+    <a href="#train_dictionary/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">train_dictionary(arg1, arg2)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> train_dictionary([[<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">byte</a>()] | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()], 0..18_446_744_073_709_551_615) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()</pre>
+
+      </div>
+
+<p>Train a dictionary from sample data for better compression of similar small files.</p><p> Parameters:</p><ul><li>samples: List of sample data buffers to train on (minimum 20 samples recommended)</li><li>dict_size: Target dictionary size in bytes (typically 100KB for small data)</li></ul><p> Returns {:ok, dictionary} on success, {:error, reason} on failure</p>
+  </section>
+</section>
+<section class="detail" id="version/0">
+
+  <div class="detail-header">
+    <a href="#version/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">version()</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/ex_zstd_zig.ex#L1" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> version() :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/ex_zstandard/0.1.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/ex_zstandard/0.1.0">Hex Preview</a>
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="ExZstandard.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.38.4) for the
+
+          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

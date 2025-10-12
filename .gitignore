@@ -25,3 +25,6 @@ ex_zstd_zig-*.tar
 .Elixir.*
 lib/git_info.ex
 STREAMING.md
+DIRTY_CPU_RECOMMENDATIOS.md
+STRATEGY_TIMING_ANALYSIS.ld
+NIF_TIMING_ANALYSIS.md
