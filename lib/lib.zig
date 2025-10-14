@@ -676,7 +676,7 @@ pub fn compress_stream(ctx: ZstdCResource, input: []const u8, end_op: EndOp) Zst
     defer if (enable_timing) {
         const elapsed_ns = std.time.nanoTimestamp() - start_time;
         const elapsed_us = @as(f64, @floatFromInt(elapsed_ns)) / 1_000_000.0;
-        std.debug.print("[NIF compress_stream] {d:.3} ms, for: {} bytes\n", .{ elapsed_us, input.len });
+        std.debug.print("\n[NIF compress_stream] {d:.3} ms, for: {} bytes\n", .{ elapsed_us, input.len });
     };
 
     const cctx = ctx.unpack().*.cctx.?;

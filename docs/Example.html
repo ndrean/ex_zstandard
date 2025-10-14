@@ -12,7 +12,7 @@
 
     <link rel="stylesheet" href="dist/html-elixir-RLZO5U2C.css" />
 
-    <script defer src="dist/sidebar_items-07E54BD3.js"></script>
+    <script defer src="dist/sidebar_items-D2E498EF.js"></script>
     <script defer src="docs_config.js"></script>
     <script defer src="dist/html-Y223O6DN.js"></script>
 
@@ -114,6 +114,30 @@ ExZstandard
 
     <div class="summary-row">
       <div class="summary-signature">
+        <a href="#compress/2" data-no-tooltip="" translate="no">compress(data, level)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#compress_with_ctx/1" data-no-tooltip="" translate="no">compress_with_ctx(data)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#decompress/1" data-no-tooltip="" translate="no">decompress(data)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
         <a href="#decompress_unfold/1" data-no-tooltip="" translate="no">decompress_unfold(data)</a>
 
       </div>
@@ -122,7 +146,15 @@ ExZstandard
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#init/1" data-no-tooltip="" translate="no">init(_)</a>
+        <a href="#decompress_with_ctx/1" data-no-tooltip="" translate="no">decompress_with_ctx(data)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#init/1" data-no-tooltip="" translate="no">init(map)</a>
 
       </div>
 
@@ -132,7 +164,7 @@ ExZstandard
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#start/0" data-no-tooltip="" translate="no">start()</a>
+        <a href="#start/1" data-no-tooltip="" translate="no">start(map \\ %{})</a>
 
       </div>
 
@@ -141,6 +173,38 @@ ExZstandard
     <div class="summary-row">
       <div class="summary-signature">
         <a href="#stop/0" data-no-tooltip="" translate="no">stop()</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#stream_download_compress/2" data-no-tooltip="" translate="no">stream_download_compress(url, path)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#stream_download_decompress/2" data-no-tooltip="" translate="no">stream_download_decompress(url, path)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#stream_file_compress/1" data-no-tooltip="" translate="no">stream_file_compress(data)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#stream_file_decompress/1" data-no-tooltip="" translate="no">stream_file_decompress(data)</a>
 
       </div>
 
@@ -182,6 +246,72 @@ ExZstandard
 <p>Returns a specification to start this module under a supervisor.</p><p>See <a href="https://hexdocs.pm/elixir/Supervisor.html"><code class="inline">Supervisor</code></a>.</p>
   </section>
 </section>
+<section class="detail" id="compress/2">
+
+  <div class="detail-header">
+    <a href="#compress/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">compress(data, level)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/example.ex#L12" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="compress_with_ctx/1">
+
+  <div class="detail-header">
+    <a href="#compress_with_ctx/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">compress_with_ctx(data)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/example.ex#L20" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="decompress/1">
+
+  <div class="detail-header">
+    <a href="#decompress/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">decompress(data)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/example.ex#L16" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
 <section class="detail" id="decompress_unfold/1">
 
   <div class="detail-header">
@@ -192,7 +322,29 @@ ExZstandard
       <h1 class="signature" translate="no">decompress_unfold(data)</h1>
 
 
-        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/example.ex#L12" class="icon-action" rel="help" aria-label="View Source">
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/example.ex#L44" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="decompress_with_ctx/1">
+
+  <div class="detail-header">
+    <a href="#decompress_with_ctx/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">decompress_with_ctx(data)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/example.ex#L36" class="icon-action" rel="help" aria-label="View Source">
           <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         </a>
 
@@ -211,10 +363,10 @@ ExZstandard
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
     <div class="heading-with-actions">
-      <h1 class="signature" translate="no">init(_)</h1>
+      <h1 class="signature" translate="no">init(map)</h1>
 
 
-        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/example.ex#L16" class="icon-action" rel="help" aria-label="View Source">
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/example.ex#L48" class="icon-action" rel="help" aria-label="View Source">
           <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         </a>
 
@@ -226,14 +378,16 @@ ExZstandard
 <p>Callback implementation for <a href="https://hexdocs.pm/elixir/GenServer.html#c:init/1"><code class="inline">GenServer.init/1</code></a>.</p>
   </section>
 </section>
-<section class="detail" id="start/0">
+<section class="detail" id="start/1">
+
+    <span id="start/0"></span>
 
   <div class="detail-header">
-    <a href="#start/0" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+    <a href="#start/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
     <div class="heading-with-actions">
-      <h1 class="signature" translate="no">start()</h1>
+      <h1 class="signature" translate="no">start(map \\ %{})</h1>
 
 
         <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/example.ex#L4" class="icon-action" rel="help" aria-label="View Source">
@@ -259,6 +413,94 @@ ExZstandard
 
 
         <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/example.ex#L8" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="stream_download_compress/2">
+
+  <div class="detail-header">
+    <a href="#stream_download_compress/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">stream_download_compress(url, path)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/example.ex#L28" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="stream_download_decompress/2">
+
+  <div class="detail-header">
+    <a href="#stream_download_decompress/2" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">stream_download_decompress(url, path)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/example.ex#L32" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="stream_file_compress/1">
+
+  <div class="detail-header">
+    <a href="#stream_file_compress/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">stream_file_compress(data)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/example.ex#L24" class="icon-action" rel="help" aria-label="View Source">
+          <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        </a>
+
+    </div>
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="stream_file_decompress/1">
+
+  <div class="detail-header">
+    <a href="#stream_file_decompress/1" class="detail-link" data-no-tooltip="" aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <div class="heading-with-actions">
+      <h1 class="signature" translate="no">stream_file_decompress(data)</h1>
+
+
+        <a href="https://github.com/ndrean/ex_zstandard/blob/main/lib/example.ex#L40" class="icon-action" rel="help" aria-label="View Source">
           <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         </a>
 

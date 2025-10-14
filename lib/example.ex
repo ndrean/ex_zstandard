@@ -25,12 +25,12 @@ defmodule Example do
     GenServer.call(__MODULE__, {:stream_compress, data})
   end
 
-  def stream_download_compress(url, path) do
-    GenServer.call(__MODULE__, {:stream_download_compress, url, path})
+  def download_compress(url, path) do
+    GenServer.call(__MODULE__, {:download_compress, url, path})
   end
 
-  def stream_download_decompress(url, path) do
-    GenServer.call(__MODULE__, {:stream_download_decompress, url, path})
+  def download_decompress(url, path) do
+    GenServer.call(__MODULE__, {:download_decompress, url, path})
   end
 
   def decompress_with_ctx(data) do
@@ -58,13 +58,13 @@ defmodule Example do
     end
   end
 
-  def handle_call({:stream_download_compress, url, path}, _, state) do
-    :ok = ExZstandard.stream_download_compress(state.cctx, url, path)
+  def handle_call({:download_compress, url, path}, _, state) do
+    :ok = ExZstandard.download_compress(state.cctx, url, path)
     {:reply, :ok, state}
   end
 
-  def handle_call({:stream_download_decompress, url, path}, _, state) do
-    :ok = ExZstandard.stream_download_decompress(state.dctx, url, path)
+  def handle_call({:download_decompress, url, path}, _, state) do
+    :ok = ExZstandard.download_decompress(state.dctx, url, path)
     {:reply, :ok, state}
   end
 

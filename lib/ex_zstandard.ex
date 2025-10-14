@@ -477,7 +477,7 @@ defmodule ExZstandard do
     drain_buffer(dctx, remaining, [decompressed | acc])
   end
 
-  def stream_download_compress(cctx, url, path) do
+  def download_compress(cctx, url, path) do
     compressed_pid = File.open!(path, [:write, :binary])
 
     Req.get!(url,
@@ -520,7 +520,7 @@ defmodule ExZstandard do
   This function handles the case where HTTP connections close with data still
   buffered by processing any remaining unconsumed bytes after the stream ends.
   """
-  def stream_download_decompress(dctx, url, path) do
+  def download_decompress(dctx, url, path) do
     decompressed_pid = File.open!(path, [:write, :binary])
 
     # Download and decompress chunks as they arrive
