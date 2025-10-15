@@ -23,14 +23,7 @@ ex_zstd_zig-*.tar
 /tmp/
 .elixir_ls/
 .Elixir.*
-.claude/
-lib/git_info.ex
-lib/.expert/
 lib/.elixir-tools/
 lib/.lexical/
-STREAMING.md
-DIRTY_CPU_RECOMMENDATION.md
-STRATEGY_TIMING_ANALYSIS.md
-NIF_TIMING_ANALYSIS.md
 .DS_Store
 priv/
