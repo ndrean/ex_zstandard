@@ -232,7 +232,11 @@ const ZstdDCtx = struct {
     dctx: ?*z.ZSTD_DCtx,
 };
 
-pub const ZstdCResource = beam.Resource(*ZstdCCtx, @import("root"), .{ .Callbacks = ZstdCCtxCallback });
+pub const ZstdCResource = beam.Resource(
+    *ZstdCCtx,
+    @import("root"),
+    .{ .Callbacks = ZstdCCtxCallback },
+);
 pub const ZstdDResource = beam.Resource(*ZstdDCtx, @import("root"), .{ .Callbacks = ZstdDCtxCallback });
 
 /// NIF callback to free the ZstdCCtx when the resource is garbage collected

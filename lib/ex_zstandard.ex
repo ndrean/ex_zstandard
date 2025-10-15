@@ -246,41 +246,39 @@ defmodule ExZstandard do
           existing_ctx
       end
 
-    with cctx do
-      Stream.resource(
-        # start_fun: state= {pid, true|false}
-        fn ->
-          {File.open!(input_path, [:read, :binary]), false}
-        end,
-        # read_fun
-        # (state = {pid, true|false}) ->{[compressed], state} | {:halt, state}
-        # compressed is emitted to next stream step (Stream.write)
-        fn
-          {file_pid, true} ->
-            {:halt, file_pid}
+    Stream.resource(
+      # start_fun: state= {pid, true|false}
+      fn ->
+        {File.open!(input_path, [:read, :binary]), false}
+      end,
+      # read_fun
+      # (state = {pid, true|false}) ->{[compressed], state} | {:halt, state}
+      # compressed is emitted to next stream step (Stream.write)
+      fn
+        {file_pid, true} ->
+          {:halt, file_pid}
 
-          {file_pid, false} ->
-            case IO.binread(file_pid, chunk_size) do
-              :eof ->
-                {:ok, {final, _, _}} = compress_stream(cctx, <<>>, :end_frame)
-                {[final], {file_pid, true}}
+        {file_pid, false} ->
+          case IO.binread(file_pid, chunk_size) do
+            :eof ->
+              {:ok, {final, _, _}} = compress_stream(cctx, <<>>, :end_frame)
+              {[final], {file_pid, true}}
 
-              {:error, reason} ->
-                raise "Failed to read file: #{inspect(reason)}"
+            {:error, reason} ->
+              raise "Failed to read file: #{inspect(reason)}"
 
-              data ->
-                {:ok, {compressed, _, _}} = compress_stream(cctx, data, mode)
-                {[compressed], {file_pid, false}}
-            end
-        end,
-        # after_fun
-        fn file_pid -> File.close(file_pid) end
-      )
-      |> Stream.into(File.stream!(output_path, [:append]))
-      |> Stream.run()
+            data ->
+              {:ok, {compressed, _, _}} = compress_stream(cctx, data, mode)
+              {[compressed], {file_pid, false}}
+          end
+      end,
+      # after_fun
+      fn file_pid -> File.close(file_pid) end
+    )
+    |> Stream.into(File.stream!(output_path, [:append]))
+    |> Stream.run()
 
-      :ok
-    end
+    :ok
   end
 
   @doc """
@@ -407,57 +405,55 @@ defmodule ExZstandard do
           existing_ctx
       end
 
-    with dctx do
-      # Ensure output file is empty before starting
-      if File.exists?(output_path), do: File.rm!(output_path)
+    # Ensure output file is empty before starting
+    if File.exists?(output_path), do: File.rm!(output_path)
 
-      Stream.resource(
-        # start_fun: () -> state = {pid, buffer = unconsumed}
-        fn -> {File.open!(input_path, [:read, :binary]), <<>>} end,
+    Stream.resource(
+      # start_fun: () -> state = {pid, buffer = unconsumed}
+      fn -> {File.open!(input_path, [:read, :binary]), <<>>} end,
 
-        # read_fun :
-        # (state = {pid, unconsumed}) ->{[decompressed], {pid, unconsumed}} | {:halt, state}
-        # decompressed is emitted to next stream step (Stream.write)
-        fn
-          # Already processed EOF and emitted final data, now halt
-          {:done, file_pid} ->
-            {:halt, file_pid}
+      # read_fun :
+      # (state = {pid, unconsumed}) ->{[decompressed], {pid, unconsumed}} | {:halt, state}
+      # decompressed is emitted to next stream step (Stream.write)
+      fn
+        # Already processed EOF and emitted final data, now halt
+        {:done, file_pid} ->
+          {:halt, file_pid}
 
-          {file_pid, buffer} ->
-            case IO.binread(file_pid, chunk_size) do
-              :eof when buffer == <<>> ->
-                # No more data to process
-                {:halt, file_pid}
+        {file_pid, buffer} ->
+          case IO.binread(file_pid, chunk_size) do
+            :eof when buffer == <<>> ->
+              # No more data to process
+              {:halt, file_pid}
 
-              :eof ->
-                # Process all remaining buffered data
-                # One decompress_stream call may not consume everything, so loop until empty
-                decompressed_chunks = drain_buffer(dctx, buffer, [])
-                # Emit chunks to the stream and mark as done (will halt on next call)
-                {Enum.reverse(decompressed_chunks), {:done, file_pid}}
+            :eof ->
+              # Process all remaining buffered data
+              # One decompress_stream call may not consume everything, so loop until empty
+              decompressed_chunks = drain_buffer(dctx, buffer, [])
+              # Emit chunks to the stream and mark as done (will halt on next call)
+              {Enum.reverse(decompressed_chunks), {:done, file_pid}}
 
-              {:error, reason} ->
-                raise "Failed to read file: #{inspect(reason)}"
+            {:error, reason} ->
+              raise "Failed to read file: #{inspect(reason)}"
 
-              chunk ->
-                # "normal" iteration: append chunk to buffer
-                data = buffer <> chunk
-                {:ok, {decompressed, bytes_consumed}} = decompress_stream(dctx, data)
+            chunk ->
+              # "normal" iteration: append chunk to buffer
+              data = buffer <> chunk
+              {:ok, {decompressed, bytes_consumed}} = decompress_stream(dctx, data)
 
-                # Keep unconsumed bytes for next iteration
-                remaining = binary_part(data, bytes_consumed, byte_size(data) - bytes_consumed)
+              # Keep unconsumed bytes for next iteration
+              remaining = binary_part(data, bytes_consumed, byte_size(data) - bytes_consumed)
 
-                {[decompressed], {file_pid, remaining}}
-            end
-        end,
-        # after_fun: (acc) -> ()
-        fn file_pid -> File.close(file_pid) end
-      )
-      |> Stream.into(File.stream!(output_path, [:append]))
-      |> Stream.run()
+              {[decompressed], {file_pid, remaining}}
+          end
+      end,
+      # after_fun: (acc) -> ()
+      fn file_pid -> File.close(file_pid) end
+    )
+    |> Stream.into(File.stream!(output_path, [:append]))
+    |> Stream.run()
 
-      :ok
-    end
+    :ok
   end
 
   # Helper function: recursively decompress until buffer is empty

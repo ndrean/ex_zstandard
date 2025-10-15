@@ -22,15 +22,15 @@ defmodule Example do
   end
 
   def stream_file_compress(data) do
-    GenServer.call(__MODULE__, {:stream_compress, data})
+    GenServer.cast(__MODULE__, {:stream_compress, data})
   end
 
   def download_compress(url, path) do
-    GenServer.call(__MODULE__, {:download_compress, url, path})
+    GenServer.cast(__MODULE__, {:download_compress, url, path})
   end
 
   def download_decompress(url, path) do
-    GenServer.call(__MODULE__, {:download_decompress, url, path})
+    GenServer.cast(__MODULE__, {:download_decompress, url, path})
   end
 
   def decompress_with_ctx(data) do
@@ -38,13 +38,14 @@ defmodule Example do
   end
 
   def stream_file_decompress(data) do
-    GenServer.call(__MODULE__, {:stream_decompress, data})
+    GenServer.cast(__MODULE__, {:stream_decompress, data})
   end
 
   def decompress_unfold(data) do
-    GenServer.call(__MODULE__, {:decompress_unfold, data})
+    GenServer.cast(__MODULE__, {:decompress_unfold, data})
   end
 
+  @impl true
   def init(map) do
     strategy = Map.get(map, :strategy, :fast)
     max_window = Map.get(map, :max_window, nil)
@@ -58,14 +59,21 @@ defmodule Example do
     end
   end
 
-  def handle_call({:download_compress, url, path}, _, state) do
+  @impl true
+  def handle_cast({:download_compress, url, path}, state) do
     :ok = ExZstandard.download_compress(state.cctx, url, path)
-    {:reply, :ok, state}
+    {:noreply, state}
   end
 
-  def handle_call({:download_decompress, url, path}, _, state) do
+  def handle_cast({:download_decompress, url, path}, state) do
     :ok = ExZstandard.download_decompress(state.dctx, url, path)
-    {:reply, :ok, state}
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_call({:decompress_unfold, data}, _, state) do
+    result = ExZstandard.decompress_unfold(data, dctx: state.dctx)
+    {:reply, result, state}
   end
 
   def handle_call({:compress, data, level}, _, state) do
@@ -86,11 +94,6 @@ defmodule Example do
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
-  end
-
-  def handle_call({:decompress_unfold, data}, _from, state) do
-    result = ExZstandard.decompress_unfold(data, dctx: state.dctx)
-    {:reply, result, state}
   end
 
   def handle_call({:compress_with_ctx, data}, _from, state) do
